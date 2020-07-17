@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=ViSOL
+GenericName=ViSOL
+Comment=Visor de resultados HULC/LIDER/CALENER
+Exec=visol-rs
+Terminal=false
+Type=Application
+StartupNotify=true

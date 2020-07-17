@@ -1,0 +1,6 @@
+- https://gtk-rs.org/docs-src/tutorial/cross
+- Buen ejemplo de treeview en gtkrs https://stackoverflow.com/questions/57135341/how-to-right-justify-numeric-data-in-list-store-tree-view-using-gtk-rs
+- Ir migrando código
+- ¿Convertir GRUPOSLIDER en enum?
+- connect columns changed
+

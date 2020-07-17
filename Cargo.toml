@@ -1,0 +1,15 @@
+[package]
+name = "visol-rs"
+version = "0.1.0"
+authors = ["Rafael Villar Burke <pachi@ietcc.csic.es>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+encoding = "0.2"
+gtk = { version = "0.9", features = ["v3_16"] }
+gdk = "0.13"
+gdk-pixbuf = "0.9"
+gio = { version = "0.9", features = ["v2_44"]}
+glib = { version = "0.10.1" }

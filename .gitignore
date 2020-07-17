@@ -1,0 +1,17 @@
+target/
+**/*.rs.bk
+.vscode
+*.ui~
+resources.gresource
+_build/
+build/
+vendor/
+org.gnome.*.json~
+
+# scripts/test.sh
+target_*/
+
+# flatpak-builder stuff
+.flatpak-builder/
+app/
+repo/
