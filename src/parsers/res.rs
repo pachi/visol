@@ -1,5 +1,6 @@
 //! Analizador de archivos de resultados de LIDER
 
+use super::types::Conceptos;
 pub use crate::parsers::types::{EdificioLIDER, PlantaLIDER, ZonaLIDER};
 use crate::utils::read_latin1_file;
 use crate::utils::Error;
@@ -98,20 +99,10 @@ fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Resu
             zona.planta = pname.to_string();
             zona.superficie = zsuperficie;
 
-            // Parsing de grupos de demanda de la zona ----------------
+            // Parsing de conceptos de demanda de la zona ----------------
             lines.find(|l| l.starts_with("Concepto, Cal_positivo"));
             // 9 grupos de demanda (Paredes Exteriores, Cubiertas, Suelos, ...)
-            let mut grupos = Vec::with_capacity(9);
-            for _ in 0..9 {
-                let valores = lines.next().ok_or_else(|| {
-                    format!(
-                        "No se encuentran los grupos de demanda de la zona {}",
-                        znombre
-                    )
-                })?;
-                grupos.push(valores.parse()?)
-            }
-            zona.grupos = grupos;
+            zona.conceptos = Conceptos::from_vec(lines.take(9).collect())?;
 
             // Parsing de componentes de demanda de la zona ------------
             lines.find(|l| l.starts_with("Numero de Componentes"));

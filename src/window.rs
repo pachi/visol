@@ -51,12 +51,12 @@ pub fn build_ui(
     window.set_application(Some(app));
 
     let ui_treeview: gtk::TreeView = ui.get_object("treeview").unwrap();
-    // Columna de icono (6 del modelo)
+    // Columna de icono (3 del modelo)
     let col = gtk::TreeViewColumn::new();
     col.set_title("Tipo");
     let cell = gtk::CellRendererPixbuf::new();
     col.pack_start(&cell, true);
-    col.add_attribute(&cell, "pixbuf", 5);
+    col.add_attribute(&cell, "pixbuf", 3);
     ui_treeview.append_column(&col);
     // Columna de texto (0)
     let col = gtk::TreeViewColumn::new();
@@ -67,11 +67,9 @@ pub fn build_ui(
     ui_treeview.append_column(&col);
     // Crea y conecta el modelo del treeview
     let store = gtk::TreeStore::new(&[
-        String::static_type(), // nonmbre activo
+        String::static_type(), // nonmbre activo (edificio, planta, zona o componente)
         u8::static_type(),     // tipo
-        String::static_type(), // planta
-        String::static_type(), // zona
-        String::static_type(), // Componente
+        String::static_type(), // zona (lo necesitamos para localizar un componente)
         Pixbuf::static_type(), // Pixbuf
     ]);
     ui_treeview.set_model(Some(&store));
@@ -131,9 +129,7 @@ pub fn build_ui(
 
             let nombre = model.get_value(&iter, 0).get::<String>().unwrap().unwrap();
             let tipo = model.get_value(&iter, 1).get::<u8>().unwrap().unwrap();
-            // let pl = model.get_value(&iter, 2).get::<String>().unwrap().unwrap();
             // let zn = model.get_value(&iter, 3).get::<String>().unwrap().unwrap();
-            // let comp = model.get_value(&iter, 4).get::<String>().unwrap().unwrap();
 
             let (mul, sup, cal, refr) = state.borrow().edificio.as_ref().unwrap().basicdata(tipo, &nombre);
             let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, type_to_str(tipo));
@@ -228,8 +224,8 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
         let edificioiter = ts.insert_with_values(
             None,
             None,
-            &[0, 1, 2, 3, 4, 5],
-            &[&e.nombre, &TYPE_EDIFICIO, &"", &"", &"", &edificio_icon],
+            &[0, 1, 2, 3],
+            &[&e.nombre, &TYPE_EDIFICIO, &"", &edificio_icon],
         );
 
         // Carga las plantas
@@ -237,23 +233,16 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
             let plantaiter = ts.insert_with_values(
                 Some(&edificioiter),
                 None,
-                &[0, 1, 2, 3, 4, 5],
-                &[
-                    &planta.nombre,
-                    &TYPE_PLANTA,
-                    &planta.nombre,
-                    &"",
-                    &"",
-                    &planta_icon,
-                ],
+                &[0, 1, 2, 3],
+                &[&planta.nombre, &TYPE_PLANTA, &"", &planta_icon],
             );
             // Las zonas de las plantas
             for zona in &planta.zonas {
                 let zonaiter = ts.insert_with_values(
                     Some(&plantaiter),
                     None,
-                    &[0, 1, 2, 3, 4, 5],
-                    &[&zona, &TYPE_ZONA, &planta.nombre, &zona, &"", &zona_icon],
+                    &[0, 1, 2, 3],
+                    &[&zona, &TYPE_ZONA, &zona, &zona_icon],
                 );
                 // Expande hasta el nivel de zonas
                 tv.expand_to_path(ts.get_path(&zonaiter).as_ref().unwrap());
@@ -262,13 +251,11 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                     ts.insert_with_values(
                         Some(&zonaiter),
                         None,
-                        &[0, 1, 2, 3, 4, 5],
+                        &[0, 1, 2, 3],
                         &[
                             &componente.nombre,
                             &TYPE_COMPONENTE,
-                            &planta.nombre,
                             &zona,
-                            &componente.nombre,
                             &componente_icon,
                         ],
                     );

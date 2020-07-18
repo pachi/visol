@@ -4,9 +4,23 @@
 //! - ZonaLIDER
 //! - Componente
 
-use crate::parsers::resqueries::ResQueries;
 use crate::utils::Error;
-use std::{collections::HashMap, ops::Add};
+use std::{
+    collections::HashMap,
+    ops::{Add, Mul},
+};
+
+// const CONCEPTOSLIDER: [&str; 9] = [
+//     "Paredes Exteriores",
+//     "Cubiertas",
+//     "Suelos",
+//     "Puentes Térmicos",
+//     "Solar Ventanas",
+//     "Transmisión Ventanas",
+//     "Fuentes Internas",
+//     "Ventilación más Infiltración",
+//     "TOTAL",
+// ];
 
 /// Tipos de objetos y estados de la aplicación
 pub const TYPE_EDIFICIO: u8 = 0;
@@ -76,6 +90,22 @@ impl EdificioLIDER {
         }
     }
 
+    /// Flujos por conceptos del edificio [kW/m²·año]
+    /// Se obtienen a partir de los de las plantas, ponderando por superficies
+    fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
+        let mut conceptos = Conceptos::default();
+        if self.superficie.abs() < f32::EPSILON {
+            return conceptos;
+        };
+
+        for planta in &self.plantas {
+            let p_conc = planta.conceptos(ed);
+            let p_sup = planta.superficie(ed);
+            conceptos = conceptos + p_sup * p_conc;
+        }
+        conceptos * (1.0 / self.superficie)
+    }
+
     pub fn minmaxgrupos(&self) -> (Componente, Componente) {
         //     def minmaxgrupos(self):
         //         """Flujo máximo y mínimo de grupos en todas las zonas del edificio  [kW/m²·año]"""
@@ -122,6 +152,92 @@ impl PlantaLIDER {
             ..Default::default()
         }
     }
+
+    /// Multiplicador de planta
+    /// TODO: comprobar que es 1 y que el multiplicador se lleva a las zonas
+    fn multiplicador(&self) -> i32 {
+        1
+    }
+
+    /// Superficie de la planta en m² [m²]
+    fn superficie(&self, ed: &EdificioLIDER) -> f32 {
+        let zonedata = &ed.zonas;
+        self.zonas
+            .iter()
+            .map(|zona| {
+                let z = zonedata.get(zona).unwrap();
+                z.superficie * z.multiplicador as f32
+            })
+            .sum()
+    }
+
+    /// Demanda anual de calefacción por m² [kWh/m²·año]
+    fn calefaccion(&self, ed: &EdificioLIDER) -> f32 {
+        self.calefaccion_meses(ed).iter().sum()
+    }
+
+    /// Demanda de calefacción por meses, agregando las de las zonas (en proporción a su superficie) kWh/m2
+    fn calefaccion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
+        let zonedata = &ed.zonas;
+        self.zonas
+            .iter()
+            .map(|z| {
+                let z = zonedata.get(z).unwrap();
+                z.calefaccion_meses
+                    .iter()
+                    .map(|dcal_i| dcal_i * z.superficie)
+                    .collect()
+            })
+            .fold(vec![0.0f32; 12], |acc, x: Vec<f32>| {
+                acc.iter().zip(x).map(|(a, b)| a + b).collect()
+            })
+            .iter()
+            .map(|m| m / self.superficie(ed))
+            .collect()
+    }
+
+    /// Demanda anual de refrigeración por m² [kWh/m²·año]
+    fn refrigeracion(&self, ed: &EdificioLIDER) -> f32 {
+        self.refrigeracion_meses(ed).iter().sum()
+    }
+
+    /// Demandas de refrigeración mensuales por m² [kWh/m²·mes]
+    fn refrigeracion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
+        let zonedata = &ed.zonas;
+        self.zonas
+            .iter()
+            .map(|z| {
+                let z = zonedata.get(z).unwrap();
+                z.refrigeracion_meses
+                    .iter()
+                    .map(|dref_i| dref_i * z.superficie)
+                    .collect()
+            })
+            .fold(vec![0.0f32; 12], |acc, x: Vec<f32>| {
+                acc.iter().zip(x).map(|(a, b)| a + b).collect()
+            })
+            .iter()
+            .map(|m| m / self.superficie(ed))
+            .collect()
+    }
+
+    /// Devuelve los flujos de calor de los grupos de las zonas de la planta
+    /// Como los conceptos se dan en valor absoluto para cada zona, al convertirlo a datos de planta
+    /// hay que ponderar por superficie (y tener en cuenta los multiplicadores)
+    fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
+        let mut conceptos = Conceptos::default();
+        let supplanta = self.superficie(&ed);
+
+        if supplanta.abs() < f32::EPSILON {
+            return conceptos;
+        };
+
+        for zona in &self.zonas {
+            let z = ed.zonas.get(zona).unwrap();
+            conceptos = conceptos + ((z.multiplicador as f32 * z.superficie) * z.conceptos);
+        }
+        conceptos * (1.0 / supplanta)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -144,7 +260,7 @@ pub struct ZonaLIDER {
     pub refrigeracion_meses: Vec<f32>,
     /// Flujos de calor por grupo (Paredes exteriores, Cubiertas...) [kWh/año]
     /// (e.g. "'Paredes Exteriores': (0.0, 1.2, 1.2, 0.0, -1.0, -1.0)")
-    pub grupos: Vec<Componente>,
+    pub conceptos: Conceptos, //Vec<Componente>,
     /// Flujos de calor por componente (elementos constructivos) [kWh/año]
     pub componentes: Vec<Componente>,
 }
@@ -161,7 +277,7 @@ impl ZonaLIDER {
             refrigeracion: 0.0,
             calefaccion_meses: vec![0.0; 12],
             refrigeracion_meses: vec![0.0; 12],
-            grupos: Vec::new(),
+            conceptos: Conceptos::default(),
             componentes: Vec::new(),
         }
     }
@@ -208,6 +324,36 @@ impl std::str::FromStr for Flujos {
     }
 }
 
+impl Add<&Flujos> for &Flujos {
+    type Output = Flujos;
+
+    fn add(self, other: &Flujos) -> Self::Output {
+        Self::Output {
+            calpos: self.calpos + other.calpos,
+            calneg: self.calneg + other.calneg,
+            calnet: self.calnet + other.calnet,
+            refpos: self.refpos + other.refpos,
+            refneg: self.refneg + other.refneg,
+            refnet: self.refnet + other.refnet,
+        }
+    }
+}
+
+impl Mul<f32> for &Flujos {
+    type Output = Flujos;
+
+    fn mul(self, other: f32) -> Self::Output {
+        Self::Output {
+            calpos: self.calpos * other,
+            calneg: self.calneg * other,
+            calnet: self.calnet * other,
+            refpos: self.refpos * other,
+            refneg: self.refneg * other,
+            refnet: self.refnet * other,
+        }
+    }
+}
+
 /// Conceptos de agrupación de flujos
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct Conceptos {
@@ -231,7 +377,133 @@ pub struct Conceptos {
     pub total: Flujos,
 }
 
-// TODO: convertir componente a nombre + Flujos
+impl Conceptos {
+    /// Parsea concepto desde lista de 6 líneas de componentes:
+    ///     concepto, calpos, calneg, calnet, refpos, refneg, refnet
+    pub fn from_vec(vec: Vec<&str>) -> Result<Self, Error> {
+        if vec.len() != 9 {
+            return Err(format!("Lista de conceptos de tamaño inesperado {:?}", vec))?;
+        }
+        let lst: Vec<(&str, Flujos)> = vec
+            .iter()
+            .map(|l| {
+                let mut vals = l.splitn(2, ',').map(str::trim);
+                let name = vals.next();
+                let flujos = vals.next().map(str::parse::<Flujos>);
+                match (name, flujos) {
+                    (Some(name), Some(Ok(flujos))) => Ok((name.trim_matches('\"'), flujos)),
+                    _ => Err(format!(
+                        "Error en formato de números de concepto: {:?}",
+                        vec
+                    )),
+                }
+            })
+            .collect::<Result<_, _>>()?;
+        let mut res = Self::default();
+        for (name, flujos) in lst {
+            match name {
+                "Paredes Exteriores" => res.pext = flujos,
+                "Cubiertas" => res.cub = flujos,
+                "Suelos" => res.suelos = flujos,
+                "Puentes Térmicos" => res.pts = flujos,
+                "Solar Ventanas" => res.huecos_solar = flujos,
+                "Transmisión Ventanas" => res.huecos_trans = flujos,
+                "Fuentes Internas" => res.fint = flujos,
+                "Infiltración" => res.vent = flujos,
+                "TOTAL" => res.total = flujos,
+                _ => Err(format!("Error al procesar concepto {}", name))?,
+            }
+        }
+        Ok(res)
+    }
+}
+
+// Ver https://stackoverflow.com/questions/28005134/how-do-i-implement-the-add-trait-for-a-reference-to-a-struct
+// para la implementación completa de operaciones
+
+impl Add<&Conceptos> for &Conceptos {
+    type Output = Conceptos;
+
+    fn add(self, other: &Conceptos) -> Self::Output {
+        Self::Output {
+            pext: &self.pext + &other.pext,
+            cub: &self.cub + &other.cub,
+            suelos: &self.suelos + &other.suelos,
+            pts: &self.pts + &other.pts,
+            huecos_solar: &self.huecos_solar + &other.huecos_solar,
+            huecos_trans: &self.huecos_trans + &other.huecos_trans,
+            fint: &self.fint + &other.fint,
+            vent: &self.vent + &other.vent,
+            total: &self.total + &other.total,
+        }
+    }
+}
+
+impl Add<Conceptos> for Conceptos {
+    type Output = Conceptos;
+
+    fn add(self, other: Conceptos) -> Self::Output {
+        &self + &other
+    }
+}
+
+impl Add<&Conceptos> for Conceptos {
+    type Output = Conceptos;
+
+    fn add(self, other: &Conceptos) -> Self::Output {
+        &self + other
+    }
+}
+
+impl Add<Conceptos> for &Conceptos {
+    type Output = Conceptos;
+
+    fn add(self, other: Conceptos) -> Self::Output {
+        self + &other
+    }
+}
+
+impl Mul<f32> for &Conceptos {
+    type Output = Conceptos;
+
+    fn mul(self, other: f32) -> Self::Output {
+        Self::Output {
+            pext: &self.pext * other,
+            cub: &self.cub * other,
+            suelos: &self.suelos * other,
+            pts: &self.pts * other,
+            huecos_solar: &self.huecos_solar * other,
+            huecos_trans: &self.huecos_trans * other,
+            fint: &self.fint * other,
+            vent: &self.vent * other,
+            total: &self.total * other,
+        }
+    }
+}
+
+impl Mul<f32> for Conceptos {
+    type Output = Conceptos;
+
+    fn mul(self, other: f32) -> Self::Output {
+        &self * other
+    }
+}
+
+impl Mul<&Conceptos> for f32 {
+    type Output = Conceptos;
+
+    fn mul(self, other: &Conceptos) -> Self::Output {
+        other * self
+    }
+}
+
+impl Mul<Conceptos> for f32 {
+    type Output = Conceptos;
+
+    fn mul(self, other: Conceptos) -> Self::Output {
+        &other * self
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 /// Componente de demanda de LIDER
@@ -239,139 +511,27 @@ pub struct Conceptos {
 pub struct Componente {
     /// Nombre del componente
     pub nombre: String,
-    /// Flujo positivo (ganancias) de energía en temporada de calefacción [kWh/año]
-    pub calpos: f32,
-    /// Flujo negativo (pérdidas) de energía en temporada de calefacción [kWh/año]
-    pub calneg: f32,
-    /// Flujo neto de energía en temporada de calefacción [kWh/año] (ganancias - pérdidas)
-    pub calnet: f32,
-    /// Flujo positivo (ganancias) de energía en temporada de refrigeración [kWh/año]
-    pub refpos: f32,
-    /// Flujo negativo (pérdidas) de energía en temporada de refrigeración [kWh/año]
-    pub refneg: f32,
-    /// Flujo neto de energía en temporada de refrigeración [kWh/año] (ganancias - pérdidas)
-    pub refnet: f32,
-}
-
-/// Componente del edificio en LIDER
-///
-///     nombre - Nombre del componente / elemento
-///     calpos - Flujo positivo de energía en temporada de calefacción [kWh/año]
-///     calneg - Flujo negativo de energía en temporada de calefacción [kWh/año]
-///     calnet - Flujo neto de energía en temporada de calefacción [kWh/año]
-///     refpos - Flujo positivo de energía en temporada de refrigeración [kWh/año]
-///     refneg - Flujo negativo de energía en temporada de refrigeración [kWh/año]
-///     refnet - Flujo neto de energía en temporada de refrigeración [kWh/año]
-impl Componente {
-    /// Constructor de nuevo componente / elemento a partir de sus datos
-    pub fn new(
-        nombre: String,
-        calpos: f32,
-        calneg: f32,
-        calnet: f32,
-        refpos: f32,
-        refneg: f32,
-        refnet: f32,
-    ) -> Self {
-        Self {
-            nombre,
-            calpos,
-            calneg,
-            calnet,
-            refpos,
-            refneg,
-            refnet,
-        }
-    }
-
-    /// Devuelve valores de flujos y nombre como listas
-    /// TODO: ver dónde se usa y si podemos elminarlo
-    pub fn demandas(&self) -> ComponentesList {
-        ComponentesList {
-            nombre: vec![self.nombre.clone()],
-            calpos: vec![self.calpos],
-            calneg: vec![self.calneg],
-            calnet: vec![self.calnet],
-            refpos: vec![self.refpos],
-            refneg: vec![self.refneg],
-            refnet: vec![self.refnet],
-        }
-    }
+    /// Flujos de energía de componente [kWh/año]
+    /// - positivo (ganancias) de energía en temporada de calefacción [kWh/año]
+    /// - negativo (pérdidas) de energía en temporada de calefacción [kWh/año]
+    /// - neto de energía en temporada de calefacción [kWh/año] (ganancias - pérdidas)
+    /// - positivo (ganancias) de energía en temporada de refrigeración [kWh/año]
+    /// - negativo (pérdidas) de energía en temporada de refrigeración [kWh/año]
+    /// - neto de energía en temporada de refrigeración [kWh/año] (ganancias - pérdidas)
+    pub flujos: Flujos,
 }
 
 impl std::str::FromStr for Componente {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let data: Vec<&str> = s.split(',').map(str::trim).collect();
-        if data.len() != 7 {
-            return Err(format!("Formato de componente erróneo: {}", s))?;
-        };
-        let nombre = data[0].trim_matches('\"').to_string();
-        let v = data[1..7]
-            .iter()
-            .map(|v| v.parse::<f32>())
-            .collect::<Result<Vec<f32>, _>>()?;
-        Ok(Self {
-            nombre,
-            calpos: v[0],
-            calneg: v[1],
-            calnet: v[2],
-            refpos: v[3],
-            refneg: v[4],
-            refnet: v[5],
-        })
-    }
-}
-
-impl Add<&Componente> for &Componente {
-    type Output = ComponentesList;
-
-    fn add(self, other: &Componente) -> Self::Output {
-        Self::Output {
-            nombre: vec![self.nombre.clone(), other.nombre.clone()],
-            calpos: vec![self.calpos, other.calpos],
-            calneg: vec![self.calneg, other.calneg],
-            calnet: vec![self.calnet, other.calnet],
-            refpos: vec![self.refpos, other.refpos],
-            refneg: vec![self.refneg, other.refneg],
-            refnet: vec![self.refnet, other.refnet],
+        let mut data = s.splitn(2, ',').map(str::trim);
+        let nombre = data.next().map(|s| s.trim_matches('\"').to_string());
+        let flujos = data.next().map(|v| v.parse::<Flujos>());
+        match (nombre, flujos) {
+            (Some(nombre), Some(Ok(flujos))) => Ok(Self { nombre, flujos }),
+            _ => Err(format!("Formato de componente erróneo: {}", s))?,
         }
-    }
-}
-
-/// Lista de nombres y flujos de calor para varios elementos o componentes
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct ComponentesList {
-    /// Nombres de los elementos / componentes
-    nombre: Vec<String>,
-    /// Flujos positivos (ganancias) de energía en temporada de calefacción [kWh/año]
-    calpos: Vec<f32>,
-    /// Flujos negativos (pérdidas) de energía en temporada de calefacción [kWh/año]
-    calneg: Vec<f32>,
-    /// Flujos netos de energía en temporada de calefacción [kWh/año] (ganancias - pérdidas)
-    calnet: Vec<f32>,
-    /// Flujos positivos (ganancias) de energía en temporada de refrigeración [kWh/año]
-    refpos: Vec<f32>,
-    /// Flujos negativos (pérdidas) de energía en temporada de refrigeración [kWh/año]
-    refneg: Vec<f32>,
-    /// Flujos netos de energía en temporada de refrigeración [kWh/año] (ganancias - pérdidas)
-    refnet: Vec<f32>,
-}
-
-impl Add<&Componente> for ComponentesList {
-    type Output = Self;
-
-    fn add(self, other: &Componente) -> Self::Output {
-        let mut res = self.clone();
-        res.nombre.push(other.nombre.clone());
-        res.calpos.push(other.calpos);
-        res.calneg.push(other.calneg);
-        res.calnet.push(other.calnet);
-        res.refpos.push(other.refpos);
-        res.refneg.push(other.refneg);
-        res.refnet.push(other.refnet);
-        res
     }
 }
 
@@ -383,33 +543,25 @@ mod tests {
     fn add_components() {
         let c1 = Componente {
             nombre: "uno".to_string(),
-            calpos: 1.0,
-            calneg: 2.0,
-            calnet: 3.0,
-            refpos: 4.0,
-            refneg: 5.0,
-            refnet: 6.0,
+            flujos: Flujos {
+                calpos: 1.0,
+                calneg: 2.0,
+                calnet: 3.0,
+                refpos: 4.0,
+                refneg: 5.0,
+                refnet: 6.0,
+            },
         };
         let c2 = Componente {
             nombre: "dos".to_string(),
-            calpos: 1.0,
-            calneg: 2.0,
-            calnet: 3.0,
-            refpos: 4.0,
-            refneg: 5.0,
-            refnet: 6.0,
-        };
-        assert_eq!(
-            ComponentesList {
-                nombre: vec!["uno".to_string(), "dos".to_string()],
-                calpos: vec![1.0, 1.0],
-                calneg: vec![2.0, 2.0],
-                calnet: vec![3.0, 3.0],
-                refpos: vec![4.0, 4.0],
-                refneg: vec![5.0, 5.0],
-                refnet: vec![6.0, 6.0]
+            flujos: Flujos {
+                calpos: 1.0,
+                calneg: 2.0,
+                calnet: 3.0,
+                refpos: 4.0,
+                refneg: 5.0,
+                refnet: 6.0,
             },
-            &c1 + &c2
-        )
+        };
     }
 }
