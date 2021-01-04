@@ -4,6 +4,22 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Modo de visualización
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Modo {
+    Edificio,
+    Planta,
+    Zona,
+    Componente
+}
+
+impl Default for Modo {
+    fn default() -> Self {
+        Self::Edificio
+    }
+}
+
+
 // const image_buffer_path: &str = "/tmp/automata_buffer.png";
 #[derive(Debug, Default, Clone)]
 pub struct AppState {
@@ -15,6 +31,8 @@ pub struct AppState {
     pub binpath: Option<PathBuf>,
     /// Datos del archivo .bin
     pub bindata: Option<BinData>,
+    /// Modo de visualización activo
+    pub mode: Modo,
 }
 
 impl AppState {

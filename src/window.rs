@@ -24,14 +24,19 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-// use gdk_pixbuf::Pixbuf;
+use cairo;
+use chrono::prelude::*;
 use gdk_pixbuf::Pixbuf;
 use gio::prelude::*;
 use glib::clone;
 use gtk::prelude::*;
 
 use crate::appstate::AppState;
-
+use crate::config::Config;
+use crate::graphs::histocomponentes::draw_histocomponentes;
+use crate::graphs::histomeses::draw_histomeses;
+use crate::graphs::horarioszona::draw_zonasgraph;
+use crate::graphs::piechart::{draw_piechart, PieMode};
 use crate::parsers::types::{type_to_str, TYPE_COMPONENTE, TYPE_EDIFICIO, TYPE_PLANTA, TYPE_ZONA};
 
 use crate::config::Config;
@@ -97,26 +102,118 @@ pub fn build_ui(
         }
     }));
 
+    // Gráfica de datos horarios de zona
+    let da_zonasgraph: gtk::DrawingArea = ui.get_object("zonasgraph").unwrap();
+    da_zonasgraph.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: ver qué datos se mandan y evitamos pasar state
+            draw_zonasgraph(widget, cr, state);
+            Inhibit(false)
+        }),
+    );
+
+    // Histograma de componentes de demanda y demandas netas anuales
+    let da_histoelementos: gtk::DrawingArea = ui.get_object("histoelementos").unwrap();
+    da_histoelementos.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo y revisar nombres, etc, porque está copiado de los meses
+            let cal_net = [-10.1, -3.4,-3.1,-3.6,17.1,-9.6,22.8,-21.2,-11.1];
+            let ref_net = [2.9,2.0,-1.4,1.2,11.3,2.9,13.2,-12.6,19.5];
+            draw_histocomponentes(widget, cr, &cal_net, &ref_net);
+            Inhibit(true)
+        }),
+    );
+
+    // Histograma de demanda mensual
+    let da_histomeses: gtk::DrawingArea = ui.get_object("histomeses").unwrap();
+    da_histomeses.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo, en el estado actual [f64;9]
+            // XXX: esto es la demanda por componentes, no por meses!
+            let calefaccion_meses = [-3.5, -2.3,-1.6,-0.0,-0.0,0.0,0.0,0.0,0.0,0.0,-0.5,-3.1];
+            let refrigeracion_meses = [0.0,0.0,0.0,0.0,0.0,3.1,6.9,6.9,2.7,0.0,0.0,0.0];
+            draw_histomeses(widget, cr, &calefaccion_meses, &refrigeracion_meses);
+            Inhibit(true)
+        }),
+    );
+
+    // Cal pos
+    let da_calpos: gtk::DrawingArea = ui.get_object("pieglobalcalpos").unwrap();
+    da_calpos.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo, en el estado actual
+            let demandas = [0.0, 0.0, 3.2, 17.1, 0.1, 22.8, 7.2, 0.1];
+            draw_piechart(widget, cr, &demandas, PieMode::CalPos);
+            Inhibit(true)
+        }),
+    );
+
+    // Cal neg
+    let da_calneg: gtk::DrawingArea = ui.get_object("pieglobalcalneg").unwrap();
+    da_calneg.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo, en el estado actual
+            let demandas = [0.0, 3.2, 17.1, 0.1, 22.8, 7.2, 0.1, 0.0];
+            draw_piechart(widget, cr, &demandas, PieMode::CalNeg);
+            Inhibit(true)
+        }),
+    );
+
+    // Ref pos
+    let da_refpos: gtk::DrawingArea = ui.get_object("pieglobalrefpos").unwrap();
+    da_refpos.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo, en el estado actual
+            let demandas = [3.2, 17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0];
+            draw_piechart(widget, cr, &demandas, PieMode::RefPos);
+            Inhibit(true)
+        }),
+    );
+
+    // Ref neg
+    let da_refneg: gtk::DrawingArea = ui.get_object("pieglobalrefneg").unwrap();
+    da_refneg.connect_draw(
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            // TODO: obtener del modelo, en el estado actual
+            let demandas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+            //let demandas = [17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0, 3.2];
+            draw_piechart(widget, cr, &demandas, PieMode::RefNeg);
+            gtk::Inhibit(false)
+        }),
+    );
+
     // Guarda pantallazo de la gráfica actual
     let mnu_screenshot: gtk::ToolButton = ui.get_object("savebutton").unwrap();
     mnu_screenshot.connect_clicked(clone!(@weak state, @weak config, @strong ui => move |_| {
         let nb: gtk::Notebook = ui.get_object("notebook").unwrap();
         let idx = nb.get_current_page();
-        let container = nb.get_nth_page(idx);
+        let container = nb.get_nth_page(idx).unwrap();
         let config = config.borrow();
-        let out_dpi = &config.out_dpi; // 100
+        let out_dpi = config.out_dpi; // 100
         let out_fmt = &config.out_fmt; // '%Y%m%d_%H%M%S'
         let out_basename = &config.out_basename; // 'ViSol'
-        println!("Localizando elemento hijo '{:?}' para imprimir pantallazo!", idx);
-        todo!()
-        // for child in container.get_children():
-        //     if child.__gtype_name__ in ['PieChart', 'HistoMeses', 'HistoElementos']:
-        //         timestamp = datetime.datetime.now().strftime(out_fmt)
-        //         filename = "%s-%s-%s.png" % (timestamp, out_basename, self.model.filename)
-        //         pathname = os.path.join(self.model.dirname, filename)
-        //         child.save(pathname, dpi=out_dpi)
-        //         self.sb.push(0, u'Guardando captura de pantalla: %s' % pathname)
-        //         break
+        let scale = out_dpi as f64 / 72.0;
+        for child in container.downcast::<gtk::Container>().unwrap().get_children() {
+            if child.is::<gtk::DrawingArea>() {
+                // Dibuja widget en superficie
+                let size = child.get_allocation();
+                let surf = cairo::ImageSurface::create(cairo::Format::ARgb32, (size.width as f64 * scale) as i32, (size.height as f64 * scale) as i32).expect("No se ha podido crear la superficie cairo");
+                let ctx = cairo::Context::new(&surf);
+                ctx.scale(scale, scale);
+                child.draw(&ctx);
+                // Genera nombre de archivo
+                let st = state.borrow();
+                let timestamp = Local::now().format(out_fmt).to_string();
+                let filename = format!("{}-{}-{}.png", timestamp, out_basename, st.filename().expect("Sin nombre de archivo para el modelo actual").display());
+                let pathname = st.dirname().expect("Sin ruta para el modelo actual").join(filename);
+                let mut outfile = std::fs::File::create(&pathname).expect("No se ha podido crear el archivo");
+                // Guarda superficie en archivo y notifica a la app
+                surf.write_to_png(&mut outfile).expect("No ");
+                let sb: gtk::Statusbar = ui.get_object("statusbar").unwrap();
+                sb.push(0, &format!("Guardando captura de pantalla: {}", pathname.display()));
+                break
+            }
+        }
     }
     ));
 

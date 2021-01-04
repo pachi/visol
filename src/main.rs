@@ -7,6 +7,7 @@ use gtk::prelude::*;
 
 mod appstate;
 mod config;
+mod graphs;
 // mod static_resource;
 mod parsers;
 mod utils;
