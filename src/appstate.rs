@@ -4,16 +4,19 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// Modo de visualización
+/// Tipo de elemento activo
+#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Modo {
-    Edificio,
-    Planta,
-    Zona,
-    Componente
+#[repr(u8)]
+pub enum TipoElemento {
+    Edificio = 0,
+    Planta = 1,
+    Zona = 2,
+    Componente = 3,
+    None = 4
 }
 
-impl Default for Modo {
+impl Default for TipoElemento {
     fn default() -> Self {
         Self::Edificio
     }
@@ -31,8 +34,10 @@ pub struct AppState {
     pub binpath: Option<PathBuf>,
     /// Datos del archivo .bin
     pub bindata: Option<BinData>,
-    /// Modo de visualización activo
-    pub mode: Modo,
+    /// Tipo de elemento activo
+    pub curr_type: TipoElemento,
+    /// Nombre del elemento activo
+    pub curr_name: String,
 }
 
 impl AppState {
@@ -121,5 +126,14 @@ impl AppState {
                 }
             };
         }
+    }
+
+    /// Devuelve parámetros básicos del objeto de nombre y zona dados
+    /// (multiplicador, superficie, calefaccion, refrigeracion)
+    pub fn basicdata(&self) -> Option<(i32, f32, f32, f32)> {
+        if self.curr_type == TipoElemento::None {return None};
+        if let Some(edificio) = self.edificio.as_ref() {
+            Some(edificio.basicdata(self.curr_type as u8, &self.curr_name))
+        } else { None }
     }
 }

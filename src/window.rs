@@ -31,7 +31,7 @@ use gio::prelude::*;
 use glib::clone;
 use gtk::prelude::*;
 
-use crate::appstate::AppState;
+use crate::appstate::{AppState, TipoElemento};
 use crate::config::Config;
 use crate::graphs::histocomponentes::draw_histocomponentes;
 use crate::graphs::histomeses::draw_histomeses;
@@ -39,7 +39,7 @@ use crate::graphs::horarioszona::draw_zonasgraph;
 use crate::graphs::piechart::{draw_piechart, PieMode};
 use crate::parsers::types::{type_to_str, TYPE_COMPONENTE, TYPE_EDIFICIO, TYPE_PLANTA, TYPE_ZONA};
 
-use crate::config::Config;
+// Inspeccionar elementos con CTRL+ SHIFT + D con la app lanzada
 
 /// Crea ventana de aplicación y conecta interfaz con canales para enviar mensajes
 ///
@@ -63,7 +63,7 @@ pub fn build_ui(
     col.pack_start(&cell, true);
     col.add_attribute(&cell, "pixbuf", 3);
     ui_treeview.append_column(&col);
-    // Columna de texto (0)
+    // Columna de texto (0 del modelo)
     let col = gtk::TreeViewColumn::new();
     col.set_title("Nombre");
     let cell = gtk::CellRendererText::new();
@@ -72,7 +72,7 @@ pub fn build_ui(
     ui_treeview.append_column(&col);
     // Crea y conecta el modelo del treeview
     let store = gtk::TreeStore::new(&[
-        String::static_type(), // nonmbre activo (edificio, planta, zona o componente)
+        String::static_type(), // nombre activo (edificio, planta, zona o componente)
         u8::static_type(),     // tipo
         String::static_type(), // zona (lo necesitamos para localizar un componente)
         Pixbuf::static_type(), // Pixbuf
@@ -174,6 +174,7 @@ pub fn build_ui(
     let da_refneg: gtk::DrawingArea = ui.get_object("pieglobalrefneg").unwrap();
     da_refneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+            
             // TODO: obtener del modelo, en el estado actual
             let demandas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
             //let demandas = [17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0, 3.2];
@@ -224,11 +225,22 @@ pub fn build_ui(
             let sb: gtk::Statusbar = ui.get_object("statusbar").unwrap();
             let labelzona: gtk::Label = ui.get_object("labelzona").unwrap();
 
-            let nombre = model.get_value(&iter, 0).get::<String>().unwrap().unwrap();
-            let tipo = model.get_value(&iter, 1).get::<u8>().unwrap().unwrap();
+            let nombre: String = model.get_value(&iter, 0).get().unwrap().unwrap();
+            let tipo: u8 = model.get_value(&iter, 1).get_some().unwrap();
             // let zn = model.get_value(&iter, 3).get::<String>().unwrap().unwrap();
+            let selected_type = match tipo {
+                TYPE_EDIFICIO => TipoElemento::Edificio,
+                TYPE_PLANTA => TipoElemento::Planta,
+                TYPE_ZONA => TipoElemento::Zona,
+                TYPE_COMPONENTE => TipoElemento::Componente,
+                _ => TipoElemento::None,
+            };
 
-            let (mul, sup, cal, refr) = state.borrow().edificio.as_ref().unwrap().basicdata(tipo, &nombre);
+            let mut model = state.borrow_mut();
+            model.curr_type = selected_type;
+            model.curr_name = nombre.clone();
+            let (mul, sup, cal, refr) = model.basicdata().unwrap();
+
             let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, type_to_str(tipo));
             match tipo {
                 TYPE_EDIFICIO | TYPE_PLANTA | TYPE_ZONA => {
@@ -266,7 +278,8 @@ pub fn build_ui(
     // win.cbelementos
     let action = gio::SimpleAction::new("cbelementos", None);
     action.connect_activate(clone!(@weak window => move |_, _| {
-        // Ver antigua función cbelementos en lugar de esto
+        // TODO: Ver antigua función cbelementos en lugar de esto
+        // Determina si se añaden calpos, calneg, refpos, refneg en las gráficas
         window.close();
     }));
     window.add_action(&action);
@@ -297,7 +310,7 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
 
         let e = state.edificio.as_ref().unwrap();
 
-        // Texto
+        // Contenido del control de texto
         let ui_tb: gtk::TextBuffer = ui.get_object("textbuffer").unwrap();
         ui_tb.set_text(&e.resdata.clone());
 

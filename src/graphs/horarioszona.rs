@@ -10,7 +10,7 @@ use gtk::WidgetExt;
 use plotters::prelude::*;
 use plotters_cairo::CairoBackend;
 
-use crate::appstate::{AppState, Modo};
+use crate::appstate::{AppState, TipoElemento};
 
 // XXX: Ver ejemplos en https://medium.com/journey-to-rust/drawing-in-gtk-in-rust-part-1-4a401eecc4e0
 // https://github.com/GuillaumeGomez/process-viewer
@@ -20,7 +20,7 @@ use crate::appstate::{AppState, Modo};
 /// Dibuja gráfica con los datos horarios de zona
 pub fn draw_zonasgraph(widget: &gtk::DrawingArea, cr: &cairo::Context, state: Rc<RefCell<AppState>>) {
     let state = state.borrow();
-    let mode = state.mode;
+    let mode = state.curr_type;
 
     let rect = widget.get_allocation();
     let width = rect.width as f64;
@@ -28,7 +28,7 @@ pub fn draw_zonasgraph(widget: &gtk::DrawingArea, cr: &cairo::Context, state: Rc
     // println!("Dibuja zonasgraph en ancho, alto: {}, {}", rect.width, rect.height);
 
     cr.save();
-    if mode != Modo::Zona {
+    if mode != TipoElemento::Zona {
         // En modos que no son de Zona dibujamos una nota
         let txt = "Seleccione una zona";
 
