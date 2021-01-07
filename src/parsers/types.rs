@@ -5,10 +5,7 @@
 //! - Componente
 
 use crate::utils::Error;
-use std::{
-    collections::HashMap,
-    ops::{Add, Mul},
-};
+use std::{collections::HashMap, fmt::{Display, Formatter}, ops::{Add, Mul}};
 
 // const CONCEPTOSLIDER: [&str; 9] = [
 //     "Paredes Exteriores",
@@ -28,14 +25,57 @@ pub const TYPE_PLANTA: u8 = 1;
 pub const TYPE_ZONA: u8 = 2;
 pub const TYPE_COMPONENTE: u8 = 3;
 
-/// Conversión de tipo / modo a str
-pub fn type_to_str(mode: u8) -> &'static str {
-    match mode {
-        TYPE_EDIFICIO => "EDIFICIO",
-        TYPE_PLANTA => "PLANTA",
-        TYPE_ZONA => "ZONA",
-        TYPE_COMPONENTE => "COMPONENTE",
-        _ => "",
+/// Tipo de elemento activo
+#[allow(unused)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TipoElemento {
+    Edificio,
+    Planta,
+    Zona,
+    Componente,
+    None
+}
+
+impl Default for TipoElemento {
+    fn default() -> Self {
+        Self::Edificio
+    }
+}
+
+impl From<u8> for TipoElemento {
+    fn from(v: u8) -> TipoElemento {
+        match v {
+            TYPE_EDIFICIO => TipoElemento::Edificio,
+            TYPE_PLANTA => TipoElemento::Planta,
+            TYPE_ZONA => TipoElemento::Zona,
+            TYPE_COMPONENTE => TipoElemento::Componente,
+            _ => TipoElemento::None,
+        }
+    }
+}
+
+impl From<TipoElemento> for u8 {
+    fn from(v: TipoElemento) -> u8 {
+        match v {
+            TipoElemento::Edificio => 0,
+            TipoElemento::Planta => 1,
+            TipoElemento::Zona => 2,
+            TipoElemento::Componente => 3,
+            _ => 255,
+        }
+    }
+}
+
+impl Display for TipoElemento {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let ss = match self {
+            TipoElemento::Edificio => "EDIFICIO",
+            TipoElemento::Planta => "PLANTA",
+            TipoElemento::Zona => "ZONA",
+            TipoElemento::Componente => "COMPONENTE",
+            _ => "",
+        };
+        write!(f, "{}", ss)
     }
 }
 

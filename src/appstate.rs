@@ -1,27 +1,10 @@
 use crate::parsers::{bin::BinData, res::EdificioLIDER};
+pub use crate::parsers::types::TipoElemento;
 use std::{
+    convert::From,
     ffi::OsString,
     path::{Path, PathBuf},
 };
-
-/// Tipo de elemento activo
-#[allow(unused)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum TipoElemento {
-    Edificio = 0,
-    Planta = 1,
-    Zona = 2,
-    Componente = 3,
-    None = 4
-}
-
-impl Default for TipoElemento {
-    fn default() -> Self {
-        Self::Edificio
-    }
-}
-
 
 // const image_buffer_path: &str = "/tmp/automata_buffer.png";
 #[derive(Debug, Default, Clone)]

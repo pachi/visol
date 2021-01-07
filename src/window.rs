@@ -24,7 +24,6 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use cairo;
 use chrono::prelude::*;
 use gdk_pixbuf::Pixbuf;
 use gio::prelude::*;
@@ -37,7 +36,6 @@ use crate::graphs::histocomponentes::draw_histocomponentes;
 use crate::graphs::histomeses::draw_histomeses;
 use crate::graphs::horarioszona::draw_zonasgraph;
 use crate::graphs::piechart::{draw_piechart, PieMode};
-use crate::parsers::types::{type_to_str, TYPE_COMPONENTE, TYPE_EDIFICIO, TYPE_PLANTA, TYPE_ZONA};
 
 // Inspeccionar elementos con CTRL+ SHIFT + D con la app lanzada
 
@@ -226,24 +224,17 @@ pub fn build_ui(
             let labelzona: gtk::Label = ui.get_object("labelzona").unwrap();
 
             let nombre: String = model.get_value(&iter, 0).get().unwrap().unwrap();
-            let tipo: u8 = model.get_value(&iter, 1).get_some().unwrap();
+            let tipo = model.get_value(&iter, 1).get_some::<u8>().unwrap().into();
             // let zn = model.get_value(&iter, 3).get::<String>().unwrap().unwrap();
-            let selected_type = match tipo {
-                TYPE_EDIFICIO => TipoElemento::Edificio,
-                TYPE_PLANTA => TipoElemento::Planta,
-                TYPE_ZONA => TipoElemento::Zona,
-                TYPE_COMPONENTE => TipoElemento::Componente,
-                _ => TipoElemento::None,
-            };
 
             let mut model = state.borrow_mut();
-            model.curr_type = selected_type;
+            model.curr_type = tipo;
             model.curr_name = nombre.clone();
             let (mul, sup, cal, refr) = model.basicdata().unwrap();
 
-            let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, type_to_str(tipo));
+            let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, tipo);
             match tipo {
-                TYPE_EDIFICIO | TYPE_PLANTA | TYPE_ZONA => {
+                TipoElemento::Edificio | TipoElemento::Planta | TipoElemento::Zona => {
                     txt1.push_str(&format!("<i>{} x {:.2}m²</i>\n", mul, sup));
                     txt1.push_str(&format!("calefacción: {:6.1}<i>kWh/m²año</i>, ", cal));
                     txt1.push_str(&format!("refrigeración: {:6.1}<i>kWh/m²año</i>", refr));
@@ -252,7 +243,7 @@ pub fn build_ui(
                     txt1.push('\n');
                 }
             };
-            sb.push(0, &format!("Seleccionado {}: {}", type_to_str(tipo), nombre));
+            sb.push(0, &format!("Seleccionado {}: {}", tipo, nombre));
             labelzona.set_property("label", &txt1).expect("Fallo al establecer etiqueta");
         }
     }));
@@ -335,7 +326,7 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
             None,
             None,
             &[0, 1, 2, 3],
-            &[&e.nombre, &TYPE_EDIFICIO, &"", &edificio_icon],
+            &[&e.nombre, &u8::from(TipoElemento::Edificio), &"", &edificio_icon],
         );
 
         // Carga las plantas
@@ -344,7 +335,7 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                 Some(&edificioiter),
                 None,
                 &[0, 1, 2, 3],
-                &[&planta.nombre, &TYPE_PLANTA, &"", &planta_icon],
+                &[&planta.nombre, &u8::from(TipoElemento::Planta), &"", &planta_icon],
             );
             // Las zonas de las plantas
             for zona in &planta.zonas {
@@ -352,7 +343,7 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                     Some(&plantaiter),
                     None,
                     &[0, 1, 2, 3],
-                    &[&zona, &TYPE_ZONA, &zona, &zona_icon],
+                    &[&zona, &u8::from(TipoElemento::Zona), &zona, &zona_icon],
                 );
                 // Expande hasta el nivel de zonas
                 tv.expand_to_path(ts.get_path(&zonaiter).as_ref().unwrap());
@@ -364,7 +355,7 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                         &[0, 1, 2, 3],
                         &[
                             &componente.nombre,
-                            &TYPE_COMPONENTE,
+                            &u8::from(TipoElemento::Componente),
                             &zona,
                             &componente_icon,
                         ],
