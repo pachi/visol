@@ -132,7 +132,7 @@ impl EdificioLIDER {
 
     /// Flujos por conceptos del edificio [kW/m²·año]
     /// Se obtienen a partir de los de las plantas, ponderando por superficies
-    fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
+    pub fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
         let mut conceptos = Conceptos::default();
         if self.superficie.abs() < f32::EPSILON {
             return conceptos;
@@ -195,12 +195,12 @@ impl PlantaLIDER {
 
     /// Multiplicador de planta
     /// TODO: comprobar que es 1 y que el multiplicador se lleva a las zonas
-    fn multiplicador(&self) -> i32 {
+    pub fn multiplicador(&self) -> i32 {
         1
     }
 
     /// Superficie de la planta en m² [m²]
-    fn superficie(&self, ed: &EdificioLIDER) -> f32 {
+    pub fn superficie(&self, ed: &EdificioLIDER) -> f32 {
         let zonedata = &ed.zonas;
         self.zonas
             .iter()
@@ -212,12 +212,12 @@ impl PlantaLIDER {
     }
 
     /// Demanda anual de calefacción por m² [kWh/m²·año]
-    fn calefaccion(&self, ed: &EdificioLIDER) -> f32 {
+    pub fn calefaccion(&self, ed: &EdificioLIDER) -> f32 {
         self.calefaccion_meses(ed).iter().sum()
     }
 
     /// Demanda de calefacción por meses, agregando las de las zonas (en proporción a su superficie) kWh/m2
-    fn calefaccion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
+    pub fn calefaccion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
         let zonedata = &ed.zonas;
         self.zonas
             .iter()
@@ -237,12 +237,12 @@ impl PlantaLIDER {
     }
 
     /// Demanda anual de refrigeración por m² [kWh/m²·año]
-    fn refrigeracion(&self, ed: &EdificioLIDER) -> f32 {
+    pub fn refrigeracion(&self, ed: &EdificioLIDER) -> f32 {
         self.refrigeracion_meses(ed).iter().sum()
     }
 
     /// Demandas de refrigeración mensuales por m² [kWh/m²·mes]
-    fn refrigeracion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
+    pub fn refrigeracion_meses(&self, ed: &EdificioLIDER) -> Vec<f32> {
         let zonedata = &ed.zonas;
         self.zonas
             .iter()
@@ -264,7 +264,7 @@ impl PlantaLIDER {
     /// Devuelve los flujos de calor de los grupos de las zonas de la planta
     /// Como los conceptos se dan en valor absoluto para cada zona, al convertirlo a datos de planta
     /// hay que ponderar por superficie (y tener en cuenta los multiplicadores)
-    fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
+    pub fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
         let mut conceptos = Conceptos::default();
         let supplanta = self.superficie(&ed);
 

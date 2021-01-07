@@ -1,5 +1,5 @@
-use crate::parsers::{bin::BinData, res::EdificioLIDER};
 pub use crate::parsers::types::TipoElemento;
+use crate::parsers::{bin::BinData, res::EdificioLIDER};
 use std::{
     convert::From,
     ffi::OsString,
@@ -114,9 +114,33 @@ impl AppState {
     /// Devuelve parámetros básicos del objeto de nombre y zona dados
     /// (multiplicador, superficie, calefaccion, refrigeracion)
     pub fn basicdata(&self) -> Option<(i32, f32, f32, f32)> {
-        if self.curr_type == TipoElemento::None {return None};
-        if let Some(edificio) = self.edificio.as_ref() {
-            Some(edificio.basicdata(self.curr_type as u8, &self.curr_name))
-        } else { None }
+        if self.curr_type == TipoElemento::None {
+            return None;
+        };
+        self.edificio.as_ref().map(|e| e.basicdata(self.curr_type as u8, &self.curr_name))
+    }
+
+    pub fn calref_monthly_data(&self) -> Option<(Vec<f32>, Vec<f32>)> {
+        match self.curr_type {
+            TipoElemento::None | TipoElemento::Componente => return None,
+            TipoElemento::Edificio => {
+                return self
+                    .edificio.as_ref()
+                    .map(|e| (e.calefaccion_meses.clone(), e.refrigeracion_meses.clone()))
+            }
+            TipoElemento::Planta => {
+                return self.edificio.as_ref().and_then(|e| {
+                    e.plantas
+                        .iter()
+                        .find(|p| p.nombre == self.curr_name)
+                        .map(|p| (p.calefaccion_meses(&e), p.refrigeracion_meses(&e)))
+                })
+            }
+            TipoElemento::Zona => {
+                return self
+                    .edificio.as_ref()
+                    .and_then(|e| e.zonas.get(&self.curr_name).map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone())))
+            }
+        }
     }
 }

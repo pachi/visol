@@ -126,11 +126,13 @@ pub fn build_ui(
     let da_histomeses: gtk::DrawingArea = ui.get_object("histomeses").unwrap();
     da_histomeses.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: obtener del modelo, en el estado actual [f64;9]
-            // XXX: esto es la demanda por componentes, no por meses!
-            let calefaccion_meses = [-3.5, -2.3,-1.6,-0.0,-0.0,0.0,0.0,0.0,0.0,0.0,-0.5,-3.1];
-            let refrigeracion_meses = [0.0,0.0,0.0,0.0,0.0,3.1,6.9,6.9,2.7,0.0,0.0,0.0];
-            draw_histomeses(widget, cr, &calefaccion_meses, &refrigeracion_meses);
+            if let Some((cal_meses, ref_meses)) = state.borrow().calref_monthly_data() {
+                // Edificio, planta o zona
+                draw_histomeses(widget, cr, Some(&cal_meses), Some(&ref_meses))
+            } else {
+                // Componente o nada
+                draw_histomeses(widget, cr, None, None)
+            };
             Inhibit(true)
         }),
     );

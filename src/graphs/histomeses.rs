@@ -19,7 +19,24 @@ use plotters_cairo::CairoBackend;
 ///
 /// El eje horizontal representa los periodos [meses] y el eje vertical la demanda existente [kWh/m²mes]
 /// No está disponible para componentes
-pub fn draw_histomeses(widget: &gtk::DrawingArea, cr: &cairo::Context, calefaccion_meses: &[f64;12], refrigeracion_meses: &[f64;12]) {
+pub fn draw_histomeses(widget: &gtk::DrawingArea, cr: &cairo::Context, calefaccion_meses: Option<&[f32]>, refrigeracion_meses: Option<&[f32]>) {
+    let rect = widget.get_allocation();
+    let root = CairoBackend::new(cr, (rect.width as u32, rect.height as u32))
+        .unwrap()
+        .into_drawing_area();
+    root.fill(&WHITE).unwrap();
+    //let root = root.margin(25, 25, 25, 25);
+
+    // TODO: manejar mejor esta situación
+    if calefaccion_meses.is_none() || refrigeracion_meses.is_none() {return}
+
+    let calefaccion_meses = calefaccion_meses.unwrap();
+    let refrigeracion_meses = refrigeracion_meses.unwrap();
+    
+    // TODO: manejar mejor esta situación
+    assert!(calefaccion_meses.len() == 12);
+    assert!(refrigeracion_meses.len() == 12);
+
     let cal_min = calefaccion_meses.iter().map(|v| v.round() as i32).min().map(|m| m - 10).unwrap_or(-30_i32);
     let ref_min = refrigeracion_meses.iter().map(|v| v.round() as i32).min().map(|m| m - 10).unwrap_or(-30_i32);
     let cal_max = calefaccion_meses.iter().map(|v| v.round() as i32).max().map(|m| m + 10).unwrap_or(30_i32);
@@ -28,12 +45,7 @@ pub fn draw_histomeses(widget: &gtk::DrawingArea, cr: &cairo::Context, calefacci
     let max = cal_max.max(ref_max);
 
 
-    let rect = widget.get_allocation();
-    let root = CairoBackend::new(cr, (rect.width as u32, rect.height as u32))
-        .unwrap()
-        .into_drawing_area();
-    root.fill(&WHITE).unwrap();
-    //let root = root.margin(25, 25, 25, 25);
+
 
     let mut ctx = ChartBuilder::on(&root)
         .caption("Demanda neta mensual", ("sans-serif", 20))
