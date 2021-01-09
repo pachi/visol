@@ -6,6 +6,8 @@ use std::f64::consts::PI;
 
 use gtk::WidgetExt;
 
+use super::linear_scale;
+
 // Pintar gráficas en gtkdrawingarea:
 // Ejemplos en: https://stackoverflow.com/questions/10250748/draw-an-image-on-drawing-area
 // https://github.com/GuillaumeGomez/process-viewer/blob/master/src/graph.rs
@@ -14,14 +16,6 @@ use gtk::WidgetExt;
 const MESES: [&str; 12] = [
     "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
-
-/// Traduce del dominio [x1, x2] al rango [x1, x2]
-fn linear_scale(domx1: f64, domx2: f64, rangex1: f64, rangex2: f64) -> impl Fn(f64) -> f64 {
-    let denom = domx2 - domx1;
-    assert!(denom.abs() > f64::EPSILON);
-    let m = (rangex2 - rangex1) / denom;
-    move |x: f64| (x - domx1) * m + rangex1
-}
 
 /// Representa histograma de demanda mensual para una zona o el edificio
 ///
@@ -41,8 +35,8 @@ pub fn draw_histomeses(
     assert!(refrigeracion_meses.len() == 12);
 
     // Posiciones
-    let min = (min / 10.0 - 1.0).round() * 10.0;
-    let max = (max / 10.0 + 1.0).round() * 10.0;
+    let min = ((min / 10.0 - 1.0).round() * 10.0) as f64;
+    let max = ((max / 10.0 + 1.0).round() * 10.0) as f64;
     let rect = widget.get_allocation();
     let width = rect.width as f64;
     let height = rect.height as f64;
@@ -53,7 +47,7 @@ pub fn draw_histomeses(
     let (og_x, og_y) = (3.0 * margin, 0.1 * height); // Esquina sup. izq.
     let (eg_x, eg_y) = (og_x + wgrafica, og_y + hgrafica); // Esquina inf. der.
     let stepx = wgrafica / 12.0;
-    let stepy = hgrafica / (max - min).abs() as f64;
+    let stepy = hgrafica / (max - min).abs();
     let title_size = 20.0;
     let normal_size = 14.0;
     let small_size = 11.0;
@@ -63,7 +57,7 @@ pub fn draw_histomeses(
     let ticksize = stepx / 10.0;
     // Escalas lineales de X e Y sobre la gráfica
     let scalex = linear_scale(0.0, 12.0, og_x, eg_x);
-    let scaley = linear_scale(min as f64, max as f64, eg_y, og_y);
+    let scaley = linear_scale(min, max, eg_y, og_y);
     let x0 = scalex(0.0);
     let y0 = scaley(0.0);
 
@@ -140,7 +134,7 @@ pub fn draw_histomeses(
         }
         cr.set_line_width(1.0);
         cr.set_source_rgb(0.0, 0.0, 0.0);
-        let txt = format!("{:.0}", max - i as f32 * 10.0);
+        let txt = format!("{:.0}", max - i as f64 * 10.0);
         let txt_ext = cr.text_extents(&txt);
         cr.move_to(og_x - 2.0 * ticksize - txt_ext.width, y);
         cr.show_text(&txt);
