@@ -126,12 +126,14 @@ pub fn build_ui(
     let da_histomeses: gtk::DrawingArea = ui.get_object("histomeses").unwrap();
     da_histomeses.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            if let Some((cal_meses, ref_meses)) = state.borrow().calref_monthly_data() {
+            let st = state.borrow();
+            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxmeses()).unwrap_or((-15.0,15.0));
+            if let Some((cal_meses, ref_meses)) = st.calref_monthly_data() {
                 // Edificio, planta o zona
-                draw_histomeses(widget, cr, Some(&cal_meses), Some(&ref_meses))
+                draw_histomeses(widget, cr, &cal_meses, &ref_meses, min, max)
             } else {
                 // Componente o nada
-                draw_histomeses(widget, cr, None, None)
+                draw_histomeses(widget, cr, &vec![0.0; 12], &vec![0.0; 12], min, max)
             };
             Inhibit(true)
         }),

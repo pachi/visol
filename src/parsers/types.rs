@@ -5,7 +5,11 @@
 //! - Componente
 
 use crate::utils::Error;
-use std::{collections::HashMap, fmt::{Display, Formatter}, ops::{Add, Mul}};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    ops::{Add, Mul},
+};
 
 // const CONCEPTOSLIDER: [&str; 9] = [
 //     "Paredes Exteriores",
@@ -33,7 +37,7 @@ pub enum TipoElemento {
     Planta,
     Zona,
     Componente,
-    None
+    None,
 }
 
 impl Default for TipoElemento {
@@ -157,18 +161,31 @@ impl EdificioLIDER {
         todo!()
     }
 
-    pub fn minmaxmeses(&self) -> (Componente, Componente) {
-        //     def minmaxmeses(self):
-        //         """Mínimo y máximo en demanda del edificio [kW/m²·año]
-
-        //         Corresponde al mínimo y máximo de las zonas, ya que las plantas y edificio
-        //         solamente tienen que tener valores más bajos por m².
-        //         """
-        //         zonas = self.zonas
-        //         _min = min(min(zona.calefaccion_meses) for zona in zonas)
-        //         _max = max(max(zona.refrigeracion_meses) for zona in zonas)
-        //         return _min, _max
-        todo!()
+    /// Mínimo y máximo en demanda del edificio [kW/m²·año]
+    /// Corresponde al mínimo y máximo de las zonas, ya que las plantas y edificio
+    /// solamente tienen que tener valores más bajos por m².
+    pub fn minmaxmeses(&self) -> (f32, f32) {
+        // mínimo de las demandas de calefacción (valores negativos)
+        let min = self
+            .zonas
+            .values()
+            .map(|z| {
+                z.calefaccion_meses
+                    .iter()
+                    .fold(f32::INFINITY, |a, &b| a.min(b))
+            })
+            .fold(f32::INFINITY, |a, b| a.min(b));
+        // máximo de las demandas de refrigeración (valores positivos)
+        let max = self
+            .zonas
+            .values()
+            .map(|z| {
+                z.refrigeracion_meses
+                    .iter()
+                    .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
+            })
+            .fold(f32::NEG_INFINITY, |a, b| a.max(b));
+        (min, max)
     }
 }
 
