@@ -1,5 +1,5 @@
-pub use crate::parsers::types::TipoElemento;
-use crate::parsers::{bin::BinData, res::EdificioLIDER};
+pub use crate::parsers::types::TipoObjeto;
+use crate::parsers::{bin::BinData, res::EdificioLIDER, types::FlujosVec};
 use std::{
     convert::From,
     ffi::OsString,
@@ -17,10 +17,12 @@ pub struct AppState {
     pub binpath: Option<PathBuf>,
     /// Datos del archivo .bin
     pub bindata: Option<BinData>,
-    /// Tipo de elemento activo
-    pub curr_type: TipoElemento,
-    /// Nombre del elemento activo
+    /// Tipo de objeto activo
+    pub curr_obj_type: TipoObjeto,
+    /// Nombre del objeto activo (Edificio, Planta, Zona, Elemento)
     pub curr_name: String,
+    /// Nombre de la zona activa (es neceario para localizar un elemento de esa zona)
+    pub curr_zone: String,
 }
 
 impl AppState {
@@ -114,21 +116,25 @@ impl AppState {
     /// Devuelve parámetros básicos del objeto de nombre y zona dados
     /// (multiplicador, superficie, calefaccion, refrigeracion)
     pub fn basicdata(&self) -> Option<(i32, f32, f32, f32)> {
-        if self.curr_type == TipoElemento::None {
+        if self.curr_obj_type == TipoObjeto::None {
             return None;
         };
-        self.edificio.as_ref().map(|e| e.basicdata(self.curr_type as u8, &self.curr_name))
+        self.edificio
+            .as_ref()
+            .map(|e| e.basicdata(self.curr_obj_type as u8, &self.curr_name))
     }
 
+    /// Datos mensuales de demanda de calefacción y refrigeración
+    /// No está definido para elementos constructivos o sin edificio definido
     pub fn calref_monthly_data(&self) -> Option<(Vec<f32>, Vec<f32>)> {
-        match self.curr_type {
-            TipoElemento::None | TipoElemento::Componente => return None,
-            TipoElemento::Edificio => {
+        match self.curr_obj_type {
+            TipoObjeto::Edificio => {
                 return self
-                    .edificio.as_ref()
+                    .edificio
+                    .as_ref()
                     .map(|e| (e.calefaccion_meses.clone(), e.refrigeracion_meses.clone()))
             }
-            TipoElemento::Planta => {
+            TipoObjeto::Planta => {
                 return self.edificio.as_ref().and_then(|e| {
                     e.plantas
                         .iter()
@@ -136,11 +142,56 @@ impl AppState {
                         .map(|p| (p.calefaccion_meses(&e), p.refrigeracion_meses(&e)))
                 })
             }
-            TipoElemento::Zona => {
-                return self
-                    .edificio.as_ref()
-                    .and_then(|e| e.zonas.get(&self.curr_name).map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone())))
+            TipoObjeto::Zona => {
+                return self.edificio.as_ref().and_then(|e| {
+                    e.zonas
+                        .get(&self.curr_name)
+                        .map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone()))
+                })
             }
+            TipoObjeto::Elemento | TipoObjeto::None => return None,
         }
+    }
+
+    /// Valores de flujos de calor por conceptos
+    /// Cuando no hay selección se devuelve todo a cero
+    pub fn concepts_data(&self) -> FlujosVec {
+        match self.curr_obj_type {
+            TipoObjeto::Edificio => self
+                .edificio
+                .as_ref()
+                .map(EdificioLIDER::conceptos)
+                .map(|c| c.to_flows()),
+            TipoObjeto::Planta => self
+                .edificio
+                .as_ref()
+                .and_then(|e| {
+                    e.plantas
+                        .iter()
+                        .find(|p| p.nombre == self.curr_name)
+                        .map(|p| p.conceptos(e))
+                })
+                .map(|c| c.to_flows()),
+            TipoObjeto::Zona => self
+                .edificio
+                .as_ref()
+                .and_then(|e| e.zonas.get(&self.curr_name).map(|z| z.conceptos))
+                .map(|c| c.to_flows()),
+            TipoObjeto::Elemento => self
+                .edificio
+                .as_ref()
+                .and_then(|e| {
+                    e.zonas.get(&self.curr_zone).and_then(|z| {
+                        z.elementos
+                            .iter()
+                            .find(|el| el.nombre == self.curr_name)
+                            .map(|el| el.flujos)
+                    })
+                })
+                .map(|c| c.to_flows()),
+            TipoObjeto::None => None,
+            _ => None,
+        }
+        .unwrap_or_default()
     }
 }

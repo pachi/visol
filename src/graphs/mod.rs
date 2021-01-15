@@ -1,6 +1,6 @@
 pub mod piechart;
 pub mod histomeses;
-pub mod histocomponentes;
+pub mod histoconceptos;
 pub mod horarioszona;
 
 /// Traduce del dominio [x1, x2] al rango [x1, x2]

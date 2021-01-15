@@ -30,9 +30,9 @@ use gio::prelude::*;
 use glib::clone;
 use gtk::prelude::*;
 
-use crate::appstate::{AppState, TipoElemento};
+use crate::appstate::{AppState, TipoObjeto};
 use crate::config::Config;
-use crate::graphs::histocomponentes::draw_histocomponentes;
+use crate::graphs::histoconceptos::draw_histoconceptos;
 use crate::graphs::histomeses::draw_histomeses;
 use crate::graphs::horarioszona::draw_zonasgraph;
 use crate::graphs::piechart::{draw_piechart, PieMode};
@@ -70,9 +70,9 @@ pub fn build_ui(
     ui_treeview.append_column(&col);
     // Crea y conecta el modelo del treeview
     let store = gtk::TreeStore::new(&[
-        String::static_type(), // nombre activo (edificio, planta, zona o componente)
+        String::static_type(), // nombre del objeto activo (edificio, planta, zona o elemento)
         u8::static_type(),     // tipo
-        String::static_type(), // zona (lo necesitamos para localizar un componente)
+        String::static_type(), // zona (lo necesitamos para localizar un elemento)
         Pixbuf::static_type(), // Pixbuf
     ]);
     ui_treeview.set_model(Some(&store));
@@ -110,14 +110,15 @@ pub fn build_ui(
         }),
     );
 
-    // Histograma de componentes de demanda y demandas netas anuales
-    let da_histoelementos: gtk::DrawingArea = ui.get_object("histoelementos").unwrap();
-    da_histoelementos.connect_draw(
+    // Histograma de flujos por conceptos de demanda y demandas netas anuales
+    let da_histoconceptos: gtk::DrawingArea = ui.get_object("histoconceptos").unwrap();
+    da_histoconceptos.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: obtener del modelo y revisar nombres, etc, porque está copiado de los meses
-            let cal_net = [-10.1, -3.4,-3.1,-3.6,17.1,-9.6,22.8,-21.2,-11.1];
-            let ref_net = [2.9,2.0,-1.4,1.2,11.3,2.9,13.2,-12.6,19.5];
-            draw_histocomponentes(widget, cr, &cal_net, &ref_net);
+            let st = state.borrow();
+            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos()).unwrap_or((-21.2, 22.8));
+            let curr_name = st.curr_name.as_str();
+            let flujos = st.concepts_data();
+            draw_histoconceptos(widget, cr, curr_name, &flujos.calnet, &flujos.refnet, min, max);
             Inhibit(true)
         }),
     );
@@ -176,7 +177,7 @@ pub fn build_ui(
     let da_refneg: gtk::DrawingArea = ui.get_object("pieglobalrefneg").unwrap();
     da_refneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            
+
             // TODO: obtener del modelo, en el estado actual
             let demandas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
             //let demandas = [17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0, 3.2];
@@ -229,16 +230,17 @@ pub fn build_ui(
 
             let nombre: String = model.get_value(&iter, 0).get().unwrap().unwrap();
             let tipo = model.get_value(&iter, 1).get_some::<u8>().unwrap().into();
-            // let zn = model.get_value(&iter, 3).get::<String>().unwrap().unwrap();
+            let zone = model.get_value(&iter, 2).get::<String>().unwrap().unwrap();
 
             let mut model = state.borrow_mut();
-            model.curr_type = tipo;
+            model.curr_obj_type = tipo;
             model.curr_name = nombre.clone();
-            let (mul, sup, cal, refr) = model.basicdata().unwrap();
+            model.curr_zone = zone.clone();
 
+            let (mul, sup, cal, refr) = model.basicdata().unwrap();
             let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, tipo);
             match tipo {
-                TipoElemento::Edificio | TipoElemento::Planta | TipoElemento::Zona => {
+                TipoObjeto::Edificio | TipoObjeto::Planta | TipoObjeto::Zona => {
                     txt1.push_str(&format!("<i>{} x {:.2}m²</i>\n", mul, sup));
                     txt1.push_str(&format!("calefacción: {:6.1}<i>kWh/m²año</i>, ", cal));
                     txt1.push_str(&format!("refrigeración: {:6.1}<i>kWh/m²año</i>", refr));
@@ -323,14 +325,19 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
         let edificio_icon = Pixbuf::from_file("./res/edificioicono.png").unwrap();
         let planta_icon = Pixbuf::from_file("./res/plantaicono.png").unwrap();
         let zona_icon = Pixbuf::from_file("./res/zonaicono.png").unwrap();
-        let componente_icon = Pixbuf::from_file("./res/componenteicono.png").unwrap();
+        let elemento_icon = Pixbuf::from_file("./res/elementoicono.png").unwrap();
 
         // Empieza con el edificio
         let edificioiter = ts.insert_with_values(
             None,
             None,
             &[0, 1, 2, 3],
-            &[&e.nombre, &u8::from(TipoElemento::Edificio), &"", &edificio_icon],
+            &[
+                &e.nombre,
+                &u8::from(TipoObjeto::Edificio),
+                &"",
+                &edificio_icon,
+            ],
         );
 
         // Carga las plantas
@@ -339,7 +346,12 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                 Some(&edificioiter),
                 None,
                 &[0, 1, 2, 3],
-                &[&planta.nombre, &u8::from(TipoElemento::Planta), &"", &planta_icon],
+                &[
+                    &planta.nombre,
+                    &u8::from(TipoObjeto::Planta),
+                    &"",
+                    &planta_icon,
+                ],
             );
             // Las zonas de las plantas
             for zona in &planta.zonas {
@@ -347,21 +359,21 @@ fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Buil
                     Some(&plantaiter),
                     None,
                     &[0, 1, 2, 3],
-                    &[&zona, &u8::from(TipoElemento::Zona), &zona, &zona_icon],
+                    &[&zona, &u8::from(TipoObjeto::Zona), &zona, &zona_icon],
                 );
                 // Expande hasta el nivel de zonas
                 tv.expand_to_path(ts.get_path(&zonaiter).as_ref().unwrap());
                 // Carga los componentes de las zonas
-                for componente in &e.zonas.get(zona).unwrap().componentes {
+                for elemento in &e.zonas.get(zona).unwrap().elementos {
                     ts.insert_with_values(
                         Some(&zonaiter),
                         None,
                         &[0, 1, 2, 3],
                         &[
-                            &componente.nombre,
-                            &u8::from(TipoElemento::Componente),
+                            &elemento.nombre,
+                            &u8::from(TipoObjeto::Elemento),
                             &zona,
-                            &componente_icon,
+                            &elemento_icon,
                         ],
                     );
                 }

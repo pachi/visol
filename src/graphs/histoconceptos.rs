@@ -1,4 +1,4 @@
-//! Histograma de demanda mensual para una zona o el edificio
+//! Histograma de componentes de demanda para un edificio, planta o zona
 //!
 //! Las pérdidas o ganancias se definen mediante las 8 categorías de HULC más el total
 
@@ -8,40 +8,47 @@ use gtk::WidgetExt;
 
 use super::linear_scale;
 
-// Pintar gráficas en gtkdrawingarea:
-// Ejemplos en: https://stackoverflow.com/questions/10250748/draw-an-image-on-drawing-area
-// https://github.com/GuillaumeGomez/process-viewer/blob/master/src/graph.rs
-
-/// Meses del año
-const MESES: [&str; 12] = [
-    "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-];
-
-/// Representa histograma de demanda mensual para una zona o el edificio
+/// Representa histograma de composición de demanda (demandas netas y por componentes): calpos, calneg, calnet, refpos, refneg, refnet
 ///
-/// Se incluye la demanda de calefacción (neg) y refrigeración (pos).
-///
-/// El eje horizontal representa los periodos [meses] y el eje vertical la demanda existente [kWh/m²mes]
-/// No está disponible para componentes
-pub fn draw_histomeses(
+/// El eje horizontal representa los componentes de demanda y el eje vertical la demanda anual para el mismo [kWh/m²a]
+/// TODO: ver cómo mostrar detalle (igual no hacer detalle con tanta granularidad)
+pub fn draw_histoconceptos(
     widget: &gtk::DrawingArea,
     cr: &cairo::Context,
-    calefaccion_meses: &[f32],
-    refrigeracion_meses: &[f32],
+    cur_name: &str,
+    cal_net: &[f32],
+    ref_net: &[f32],
     min: f32,
     max: f32,
 ) {
-    assert!(calefaccion_meses.len() == 12);
-    assert!(refrigeracion_meses.len() == 12);
+    assert!(cal_net.len() == 9 || cal_net.len() == 1);
+    assert!(ref_net.len() == 9 || ref_net.len() == 1);
+
+    let xtitles = if cal_net.len() == 9 {
+        vec![
+            "Paredes exteriores",
+            "Cubiertas",
+            "Suelos",
+            "Puentes térmicos",
+            "Solar ventanas",
+            "Transmisión ventanas",
+            "Fuentes internas",
+            "Ventilación e infiltración",
+            "TOTAL",
+        ]
+    } else {
+        vec![cur_name]
+    };
+
     let min = ((min / 10.0 - 1.0).round() * 10.0) as f64;
     let max = ((max / 10.0 + 1.0).round() * 10.0) as f64;
 
     let title_size = 20.0;
     let normal_size = 14.0;
     let small_size = 11.0;
-    let title = "Demanda neta mensual";
-    let xlabel = "Mes";
-    let ylabel = "Demanda [kWh/m²·mes]";
+    let title = "Demandas por componente";
+    let ylabel = "Demanda [kWh/m²·año]";
+    let numseries = 2.0; // TODO: por ahora son dos, pero se podrán añadir más con cal+, cal-, ref-, ref+
 
     // Posiciones
     let rect = widget.get_allocation();
@@ -49,15 +56,15 @@ pub fn draw_histomeses(
     let height = rect.height as f64;
     let htitulo = 0.1 * height;
     let margin = 0.05 * height;
-    let hgrafica = 0.9 * height - 2.0 * margin;
+    let hgrafica = 0.9 * height - 3.0 * margin;
     let wgrafica = width - 4.0 * margin;
     let (og_x, og_y) = (3.0 * margin, 0.1 * height); // Esquina sup. izq.
     let (eg_x, eg_y) = (og_x + wgrafica, og_y + hgrafica); // Esquina inf. der.
-    let stepx = wgrafica / MESES.len() as f64;
+    let stepx = wgrafica / xtitles.len() as f64;
     let stepy = hgrafica / (max - min).abs();
-    let ticksize = stepx / 10.0;
+    let ticksize = wgrafica / 100.0;
     // Escalas lineales de X e Y sobre la gráfica
-    let scalex = linear_scale(0.0, MESES.len() as f64, og_x, eg_x);
+    let scalex = linear_scale(0.0, xtitles.len() as f64, og_x, eg_x);
     let scaley = linear_scale(min, max, eg_y, og_y);
     let x0 = scalex(0.0);
     let y0 = scaley(0.0);
@@ -94,22 +101,25 @@ pub fn draw_histomeses(
     cr.rotate(-PI / 2.0);
     cr.show_text(ylabel);
     cr.restore();
-    // XLabel
-    let extents = cr.text_extents(xlabel);
-    cr.move_to((width - extents.width) / 2.0, height - margin / 2.0);
-    cr.show_text(xlabel);
-    // Meses
+
+    // Etiquetas de componentes
     cr.set_line_width(1.0);
     cr.set_font_size(small_size);
-    let labelw = cr.text_extents("Sep").width;
-    let mut xpos = og_x + (stepx - labelw) / 2.0;
-    let ypos = eg_y + ticksize * 2.0;
-    cr.move_to(xpos, ypos);
-    for label in &MESES {
-        cr.show_text(label);
-        xpos = xpos + stepx;
+
+    let layout = widget.create_pango_layout(None);
+    let fontdesc = pango::FontDescription::from_string(&format!("Arial Normal {}", small_size));
+    layout.set_font_description(Some(&fontdesc));
+    layout.set_alignment(pango::Alignment::Center);
+    layout.set_width(pango::units_from_double((stepx * 0.9).round()));
+
+    for (i, label) in xtitles.iter().enumerate() {
+        layout.set_text(label);
+        let xpos = og_x + (i as f64 + 0.05) * stepx;
+        let ypos = eg_y + ticksize * 2.0;
         cr.move_to(xpos, ypos);
+        pangocairo::show_layout(cr, &layout);
     }
+
     // Ticks en x
     cr.set_line_width(1.0);
     cr.set_source_rgb(0.0, 0.0, 0.0);
@@ -147,46 +157,53 @@ pub fn draw_histomeses(
     }
 
     // Barras calefacción
-    for (i, cal) in calefaccion_meses.iter().enumerate() {
+    for (i, val) in cal_net.iter().enumerate() {
         cr.new_path();
         let x = scalex(i as f64);
-        let y = scaley(*cal as f64);
+        let y = scaley(*val as f64);
         let height = y - y0;
-        cr.rectangle(x, y, stepx, -height);
+        cr.rectangle(x, y, stepx / numseries, -height);
         cr.set_source_rgb(1.0, 0.0, 0.0);
         cr.fill_preserve();
         cr.set_source_rgb(0.0, 0.0, 0.0);
         cr.stroke();
-        if cal.abs() >= f32::EPSILON {
-            let txt = format!("{:.1}", cal);
+        if val.abs() >= f32::EPSILON {
+            let txt = format!("{:.1}", val);
             let txt_ext = cr.text_extents(&txt);
-            let x_txt = scalex(i as f64 + 0.5) - txt_ext.width / 2.0;
-            let y_txt = y + txt_ext.height * 1.5;
+            let x_txt = scalex(i as f64 + 0.5 / numseries) - txt_ext.width / 2.0;
+            let y_txt = if *val < 0.0 {
+                y + txt_ext.height * 1.5
+            } else {
+                y - txt_ext.height * 0.5
+            };
             cr.move_to(x_txt, y_txt);
             cr.show_text(&txt);
         }
     }
     // Barras refrigeración
-    for (i, refr) in refrigeracion_meses.iter().enumerate() {
+    for (i, val) in ref_net.iter().enumerate() {
         cr.new_path();
-        let x = scalex(i as f64);
-        let y = scaley(*refr as f64);
+        let x = scalex(i as f64 + 1.0 / numseries);
+        let y = scaley(*val as f64);
         let height = y - y0;
-        cr.rectangle(x, y, stepx, -height);
+        cr.rectangle(x, y, stepx / numseries, -height);
         cr.set_source_rgb(0.0, 0.0, 1.0);
         cr.fill_preserve();
         cr.set_source_rgb(0.0, 0.0, 0.0);
         cr.stroke();
-        if refr.abs() > f32::EPSILON {
-            let txt = format!("{:.1}", refr);
+        if val.abs() > f32::EPSILON {
+            let txt = format!("{:.1}", val);
             let txt_ext = cr.text_extents(&txt);
-            let x_txt = scalex(i as f64 + 0.5) - txt_ext.width / 2.0;
-            let y_txt = y - txt_ext.height * 0.5;
+            let x_txt = scalex(i as f64 + 0.5 / numseries + 1.0 / numseries) - txt_ext.width / 2.0;
+            let y_txt = if *val < 0.0 {
+                y + txt_ext.height * 1.5
+            } else {
+                y - txt_ext.height * 0.5
+            };
             cr.move_to(x_txt, y_txt);
             cr.show_text(&txt);
         }
     }
     // Restauramos contexto
     cr.restore();
-
 }

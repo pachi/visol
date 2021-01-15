@@ -2,7 +2,7 @@
 //! - EdificioLIDER
 //! - PlantaLIDER
 //! - ZonaLIDER
-//! - Componente
+//! - Elemento
 
 use crate::utils::Error;
 use std::{
@@ -11,72 +11,60 @@ use std::{
     ops::{Add, Mul},
 };
 
-// const CONCEPTOSLIDER: [&str; 9] = [
-//     "Paredes Exteriores",
-//     "Cubiertas",
-//     "Suelos",
-//     "Puentes Térmicos",
-//     "Solar Ventanas",
-//     "Transmisión Ventanas",
-//     "Fuentes Internas",
-//     "Ventilación más Infiltración",
-//     "TOTAL",
-// ];
-
 /// Tipos de objetos y estados de la aplicación
 pub const TYPE_EDIFICIO: u8 = 0;
 pub const TYPE_PLANTA: u8 = 1;
 pub const TYPE_ZONA: u8 = 2;
 pub const TYPE_COMPONENTE: u8 = 3;
 
-/// Tipo de elemento activo
+/// Tipo de objeto activo
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TipoElemento {
+pub enum TipoObjeto {
     Edificio,
     Planta,
     Zona,
-    Componente,
+    Elemento,
     None,
 }
 
-impl Default for TipoElemento {
+impl Default for TipoObjeto {
     fn default() -> Self {
         Self::Edificio
     }
 }
 
-impl From<u8> for TipoElemento {
-    fn from(v: u8) -> TipoElemento {
+impl From<u8> for TipoObjeto {
+    fn from(v: u8) -> TipoObjeto {
         match v {
-            TYPE_EDIFICIO => TipoElemento::Edificio,
-            TYPE_PLANTA => TipoElemento::Planta,
-            TYPE_ZONA => TipoElemento::Zona,
-            TYPE_COMPONENTE => TipoElemento::Componente,
-            _ => TipoElemento::None,
+            TYPE_EDIFICIO => TipoObjeto::Edificio,
+            TYPE_PLANTA => TipoObjeto::Planta,
+            TYPE_ZONA => TipoObjeto::Zona,
+            TYPE_COMPONENTE => TipoObjeto::Elemento,
+            _ => TipoObjeto::None,
         }
     }
 }
 
-impl From<TipoElemento> for u8 {
-    fn from(v: TipoElemento) -> u8 {
+impl From<TipoObjeto> for u8 {
+    fn from(v: TipoObjeto) -> u8 {
         match v {
-            TipoElemento::Edificio => 0,
-            TipoElemento::Planta => 1,
-            TipoElemento::Zona => 2,
-            TipoElemento::Componente => 3,
+            TipoObjeto::Edificio => 0,
+            TipoObjeto::Planta => 1,
+            TipoObjeto::Zona => 2,
+            TipoObjeto::Elemento => 3,
             _ => 255,
         }
     }
 }
 
-impl Display for TipoElemento {
+impl Display for TipoObjeto {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let ss = match self {
-            TipoElemento::Edificio => "EDIFICIO",
-            TipoElemento::Planta => "PLANTA",
-            TipoElemento::Zona => "ZONA",
-            TipoElemento::Componente => "COMPONENTE",
+            TipoObjeto::Edificio => "EDIFICIO",
+            TipoObjeto::Planta => "PLANTA",
+            TipoObjeto::Zona => "ZONA",
+            TipoObjeto::Elemento => "COMPONENTE",
             _ => "",
         };
         write!(f, "{}", ss)
@@ -108,7 +96,7 @@ pub struct EdificioLIDER {
 
 impl EdificioLIDER {
     /// Devuelve parámetros básicos del objeto de nombre y zona dados
-    /// (multiplicador, superficie, calefaccion, refrigeracion)
+    /// (multiplicador, superficie, demanda de calefaccion, demanda de refrigeracion)
     pub fn basicdata(&self, mode: u8, nombre: &str) -> (i32, f32, f32, f32) {
         match mode {
             TYPE_EDIFICIO => (1, self.superficie, self.calefaccion, self.refrigeracion),
@@ -134,33 +122,6 @@ impl EdificioLIDER {
         }
     }
 
-    /// Flujos por conceptos del edificio [kW/m²·año]
-    /// Se obtienen a partir de los de las plantas, ponderando por superficies
-    pub fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
-        let mut conceptos = Conceptos::default();
-        if self.superficie.abs() < f32::EPSILON {
-            return conceptos;
-        };
-
-        for planta in &self.plantas {
-            let p_conc = planta.conceptos(ed);
-            let p_sup = planta.superficie(ed);
-            conceptos = conceptos + p_sup * p_conc;
-        }
-        conceptos * (1.0 / self.superficie)
-    }
-
-    pub fn minmaxgrupos(&self) -> (Componente, Componente) {
-        //     def minmaxgrupos(self):
-        //         """Flujo máximo y mínimo de grupos en todas las zonas del edificio  [kW/m²·año]"""
-        //         zonas = self.zonas
-        //         names = self.gruposlider
-        //         pmin = min(min(zona.grupos[name].values) for zona in zonas for name in names)
-        //         pmax = max(max(zona.grupos[name].values) for zona in zonas for name in names)
-        //         return pmin, pmax
-        todo!()
-    }
-
     /// Mínimo y máximo en demanda del edificio [kW/m²·año]
     /// Corresponde al mínimo y máximo de las zonas, ya que las plantas y edificio
     /// solamente tienen que tener valores más bajos por m².
@@ -172,9 +133,10 @@ impl EdificioLIDER {
             .map(|z| {
                 z.calefaccion_meses
                     .iter()
-                    .fold(f32::INFINITY, |a, &b| a.min(b))
+                    .cloned()
+                    .fold(f32::NEG_INFINITY, f32::min)
             })
-            .fold(f32::INFINITY, |a, b| a.min(b));
+            .fold(f32::NEG_INFINITY, f32::min);
         // máximo de las demandas de refrigeración (valores positivos)
         let max = self
             .zonas
@@ -182,10 +144,37 @@ impl EdificioLIDER {
             .map(|z| {
                 z.refrigeracion_meses
                     .iter()
-                    .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
+                    .cloned()
+                    .fold(f32::INFINITY, f32::max)
             })
-            .fold(f32::NEG_INFINITY, |a, b| a.max(b));
+            .fold(f32::INFINITY, f32::max);
         (min, max)
+    }
+
+    /// Flujos por conceptos del edificio [kW/m²·año]
+    /// Se obtienen a partir de los de las plantas, ponderando por superficies
+    pub fn conceptos(&self) -> Conceptos {
+        let mut conceptos = Conceptos::default();
+        if self.superficie.abs() < f32::EPSILON {
+            return conceptos;
+        };
+
+        for planta in &self.plantas {
+            let p_conc = planta.conceptos(self);
+            let p_sup = planta.superficie(self);
+            conceptos = conceptos + p_sup * p_conc;
+        }
+        conceptos * (1.0 / self.superficie)
+    }
+
+    /// Flujo máximo y mínimo de la demanda por conceptos en todas las zonas del edificio  [kW/m²·año]
+    pub fn minmaxconceptos(&self) -> (f32, f32) {
+        let (min, max): (Vec<_>, Vec<_>) =
+            self.zonas.values().map(|z| z.conceptos.minmax()).unzip();
+        (
+            min.iter().cloned().fold(f32::NAN, f32::min),
+            max.iter().cloned().fold(f32::NAN, f32::max),
+        )
     }
 }
 
@@ -278,14 +267,14 @@ impl PlantaLIDER {
             .collect()
     }
 
-    /// Devuelve los flujos de calor de los grupos de las zonas de la planta
-    /// Como los conceptos se dan en valor absoluto para cada zona, al convertirlo a datos de planta
+    /// Devuelve los flujos de calor por componentes de demanda de las zonas de la planta
+    /// Como los valores por componente se dan en valor absoluto para cada zona, al convertirlo a datos de planta
     /// hay que ponderar por superficie (y tener en cuenta los multiplicadores)
     pub fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
         let mut conceptos = Conceptos::default();
-        let supplanta = self.superficie(&ed);
+        let sup_planta = self.superficie(&ed);
 
-        if supplanta.abs() < f32::EPSILON {
+        if sup_planta.abs() < f32::EPSILON {
             return conceptos;
         };
 
@@ -293,7 +282,7 @@ impl PlantaLIDER {
             let z = ed.zonas.get(zona).unwrap();
             conceptos = conceptos + ((z.multiplicador as f32 * z.superficie) * z.conceptos);
         }
-        conceptos * (1.0 / supplanta)
+        conceptos * (1.0 / sup_planta)
     }
 }
 
@@ -315,11 +304,11 @@ pub struct ZonaLIDER {
     pub calefaccion_meses: Vec<f32>,
     /// Demanda mensual de refrigeración de la zona [kWh/m²/mes]
     pub refrigeracion_meses: Vec<f32>,
-    /// Flujos de calor por grupo (Paredes exteriores, Cubiertas...) [kWh/año]
+    /// Flujos de calor por conceptos / componentes de demanda (Paredes exteriores, Cubiertas...) [kWh/año]
     /// (e.g. "'Paredes Exteriores': (0.0, 1.2, 1.2, 0.0, -1.0, -1.0)")
     pub conceptos: Conceptos, //Vec<Componente>,
-    /// Flujos de calor por componente (elementos constructivos) [kWh/año]
-    pub componentes: Vec<Componente>,
+    /// Flujos de calor por elemento constructivo [kWh/año]
+    pub elementos: Vec<Elemento>,
 }
 
 impl ZonaLIDER {
@@ -335,12 +324,41 @@ impl ZonaLIDER {
             calefaccion_meses: vec![0.0; 12],
             refrigeracion_meses: vec![0.0; 12],
             conceptos: Conceptos::default(),
-            componentes: Vec::new(),
+            elementos: Vec::new(),
         }
     }
 }
 
 // ----------------------------------------------------------------------------------------
+
+/// Vectores de valores por tipos de flujo
+pub struct FlujosVec {
+    /// Ganancias térmicas en periodo de calefacción
+    pub calpos: Vec<f32>,
+    /// Pérdidas térmicas en periodo de refrigeración
+    pub calneg: Vec<f32>,
+    /// Ganancia o pérdida neta en periodo de calefacción
+    pub calnet: Vec<f32>,
+    /// Ganancias térmicas en periodo de refrigeración
+    pub refpos: Vec<f32>,
+    /// Pérdidas térmicas en periodo de refrigeración
+    pub refneg: Vec<f32>,
+    /// Ganancias o pérdidas netas en periodo de refrigeración
+    pub refnet: Vec<f32>,
+}
+
+impl Default for FlujosVec {
+    fn default() -> Self {
+        Self {
+            calpos: vec![0.0],
+            calneg: vec![0.0],
+            calnet: vec![0.0],
+            refpos: vec![0.0],
+            refneg: vec![0.0],
+            refnet: vec![0.0],
+        }
+    }
+}
 
 /// Flujos a través de un elemento
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
@@ -357,6 +375,37 @@ pub struct Flujos {
     pub refneg: f32,
     /// Flujo neto de energía en temporada de refrigeración [kWh/año] (ganancias - pérdidas)
     pub refnet: f32,
+}
+
+impl Flujos {
+    /// Devuelve el valor mínimo y máximo de todos los flujos
+    pub fn minmax(&self) -> (f32, f32) {
+        let Flujos {
+            calpos,
+            calneg,
+            calnet,
+            refpos,
+            refneg,
+            refnet,
+        } = self.clone();
+        let values = [calpos, calneg, calnet, refpos, refneg, refnet];
+        return (
+            values.iter().cloned().fold(f32::NAN, f32::min),
+            values.iter().cloned().fold(f32::NAN, f32::max),
+        );
+    }
+
+    /// Conversión a vectores de flujos por tipo de flujo
+    pub fn to_flows(&self) -> FlujosVec {
+        FlujosVec {
+            calpos: vec![self.calpos],
+            calneg: vec![self.calneg],
+            calnet: vec![self.calnet],
+            refpos: vec![self.refpos],
+            refneg: vec![self.refneg],
+            refnet: vec![self.refnet],
+        }
+    }
 }
 
 impl std::str::FromStr for Flujos {
@@ -410,6 +459,18 @@ impl Mul<f32> for &Flujos {
         }
     }
 }
+
+const CONCEPTOS: [&str; 9] = [
+    "Paredes Exteriores",
+    "Cubiertas",
+    "Suelos",
+    "Puentes Térmicos",
+    "Solar Ventanas",
+    "Transmisión Ventanas",
+    "Fuentes Internas",
+    "Ventilación más Infiltración",
+    "TOTAL",
+];
 
 /// Conceptos de agrupación de flujos
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
@@ -472,6 +533,123 @@ impl Conceptos {
             }
         }
         Ok(res)
+    }
+
+    /// Valor mínimo y máximo de entre todos los flujos
+    pub fn minmax(&self) -> (f32, f32) {
+        let Conceptos {
+            pext,
+            cub,
+            suelos,
+            pts,
+            huecos_solar,
+            huecos_trans,
+            fint,
+            vent,
+            total,
+        } = self;
+        let (minvalues, maxvalues): (Vec<f32>, Vec<f32>) = [
+            pext,
+            cub,
+            suelos,
+            pts,
+            huecos_solar,
+            huecos_trans,
+            fint,
+            vent,
+            total,
+        ]
+        .iter()
+        .cloned()
+        .map(Flujos::minmax)
+        .unzip();
+        (
+            minvalues.iter().cloned().fold(f32::NAN, f32::min),
+            maxvalues.iter().cloned().fold(f32::NAN, f32::max),
+        )
+    }
+
+    /// Conversión a vectores de flujos por conceptos
+    pub fn to_flows(&self) -> FlujosVec {
+        let Conceptos {
+            pext,
+            cub,
+            suelos,
+            pts,
+            huecos_solar,
+            huecos_trans,
+            fint,
+            vent,
+            total,
+        } = self;
+        FlujosVec {
+            calpos: vec![
+                pext.calpos,
+                cub.calpos,
+                suelos.calpos,
+                pts.calpos,
+                huecos_solar.calpos,
+                huecos_trans.calpos,
+                fint.calpos,
+                vent.calpos,
+                total.calpos,
+            ],
+            calneg: vec![
+                pext.calneg,
+                cub.calneg,
+                suelos.calneg,
+                pts.calneg,
+                huecos_solar.calneg,
+                huecos_trans.calneg,
+                fint.calneg,
+                vent.calneg,
+                total.calneg,
+            ],
+            calnet: vec![
+                pext.calnet,
+                cub.calnet,
+                suelos.calnet,
+                pts.calnet,
+                huecos_solar.calnet,
+                huecos_trans.calnet,
+                fint.calnet,
+                vent.calnet,
+                total.calnet,
+            ],
+            refpos: vec![
+                pext.refpos,
+                cub.refpos,
+                suelos.refpos,
+                pts.refpos,
+                huecos_solar.refpos,
+                huecos_trans.refpos,
+                fint.refpos,
+                vent.refpos,
+                total.refpos,
+            ],
+            refneg: vec![
+                pext.refneg,
+                cub.refneg,
+                suelos.refneg,
+                pts.refneg,
+                huecos_solar.refneg,
+                huecos_trans.refneg,
+                fint.refneg,
+                vent.refneg,
+                total.refneg,
+            ],
+            refnet: vec![
+                pext.refnet,
+                cub.refnet,
+                suelos.refnet,
+                pts.refnet,
+                huecos_solar.refnet,
+                huecos_trans.refnet,
+                fint.refnet,
+                vent.refnet,
+                total.refnet,
+            ],
+        }
     }
 }
 
@@ -563,12 +741,12 @@ impl Mul<Conceptos> for f32 {
 }
 
 #[derive(Debug, Clone, Default)]
-/// Componente de demanda de LIDER
+/// Flujos de calor de elementos de LIDER
 /// Puede usarse para definir el comportamiento de elementos constructivos o grupos de demanda
-pub struct Componente {
-    /// Nombre del componente
+pub struct Elemento {
+    /// Nombre del elemento constructivo
     pub nombre: String,
-    /// Flujos de energía de componente [kWh/año]
+    /// Flujos de energía del elemento constructivo [kWh/año]
     /// - positivo (ganancias) de energía en temporada de calefacción [kWh/año]
     /// - negativo (pérdidas) de energía en temporada de calefacción [kWh/año]
     /// - neto de energía en temporada de calefacción [kWh/año] (ganancias - pérdidas)
@@ -578,7 +756,7 @@ pub struct Componente {
     pub flujos: Flujos,
 }
 
-impl std::str::FromStr for Componente {
+impl std::str::FromStr for Elemento {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -587,7 +765,7 @@ impl std::str::FromStr for Componente {
         let flujos = data.next().map(|v| v.parse::<Flujos>());
         match (nombre, flujos) {
             (Some(nombre), Some(Ok(flujos))) => Ok(Self { nombre, flujos }),
-            _ => Err(format!("Formato de componente erróneo: {}", s))?,
+            _ => Err(format!("Formato de elemento constructivo erróneo: {}", s))?,
         }
     }
 }
@@ -597,8 +775,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn add_components() {
-        let c1 = Componente {
+    fn add_elements() {
+        let c1 = Elemento {
             nombre: "uno".to_string(),
             flujos: Flujos {
                 calpos: 1.0,
@@ -609,7 +787,7 @@ mod tests {
                 refnet: 6.0,
             },
         };
-        let c2 = Componente {
+        let c2 = Elemento {
             nombre: "dos".to_string(),
             flujos: Flujos {
                 calpos: 1.0,

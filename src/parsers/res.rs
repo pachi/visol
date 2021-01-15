@@ -106,7 +106,7 @@ fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Resu
 
             // Parsing de componentes de demanda de la zona ------------
             lines.find(|l| l.starts_with("Numero de Componentes"));
-            let numcomponentes: i32 = lines
+            let elementos: i32 = lines
                 .next()
                 .ok_or_else(|| {
                     format!(
@@ -116,15 +116,15 @@ fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Resu
                 })?
                 .parse()?;
             lines.find(|l| l.starts_with("Componente, Cal_positivo"));
-            zona.componentes = Vec::with_capacity(numcomponentes as usize);
-            for _ in 0..numcomponentes {
+            zona.elementos = Vec::with_capacity(elementos as usize);
+            for _ in 0..elementos {
                 let valores = lines.next().ok_or_else(|| {
                     format!(
                         "No se encuentran las demandas de componentes de la zona {}",
                         znombre
                     )
                 })?;
-                zona.componentes.push(valores.parse()?);
+                zona.elementos.push(valores.parse()?);
             }
             planta.zonas.push(zona.nombre.clone());
             zonas.insert(zona.nombre.clone(), zona);
