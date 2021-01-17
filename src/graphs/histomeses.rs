@@ -82,6 +82,47 @@ pub fn draw_histomeses(
     );
     cr.show_text(title);
 
+    // Leyendas
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.set_line_width(0.5);
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.set_font_size(small_size);
+
+    let extents = cr.text_extents("cal+");
+    let (name_width, name_height) = (extents.width, extents.height);
+    // cal
+    cr.move_to(
+        x0,
+        htitulo + 2.0 * name_height,
+    );
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.show_text("cal");
+    cr.rectangle(
+        x0 + name_width * 1.25,
+        htitulo + 2.0 * name_height,
+        name_width,
+        -name_height,
+    );
+    cr.stroke_preserve();
+    cr.set_source_rgb(1.0, 0.0, 0.0);
+    cr.fill();
+    // ref
+    cr.move_to(
+        x0 + 3.0 * name_width,
+        htitulo + 2.0 * name_height,
+    );
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.show_text("ref");
+    cr.rectangle(
+        x0 + name_width * 4.25,
+        htitulo + 2.0 * name_height,
+        name_width,
+        -name_height,
+    );
+    cr.stroke_preserve();
+    cr.set_source_rgb(0.0, 0.0, 1.0);
+    cr.fill();
+
     // Rótulos de ejes
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
 
