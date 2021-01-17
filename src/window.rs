@@ -115,10 +115,10 @@ pub fn build_ui(
     da_histoconceptos.connect_draw(
         clone!(@weak state, @strong ui => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
-            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos()).unwrap_or((-21.2, 22.8));
+            let show_detail = st.show_detail;
             let curr_name = st.curr_name.as_str();
             let flujos = &st.concepts_data();
-            let show_detail = st.show_detail;
+            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos(!show_detail)).unwrap_or((-21.2, 22.8));
             draw_histoconceptos(widget, cr, curr_name, flujos, min, max, show_detail);
             Inhibit(true)
         }),

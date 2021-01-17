@@ -168,9 +168,14 @@ impl EdificioLIDER {
     }
 
     /// Flujo máximo y mínimo de la demanda por conceptos en todas las zonas del edificio  [kW/m²·año]
-    pub fn minmaxconceptos(&self) -> (f32, f32) {
-        let (min, max): (Vec<_>, Vec<_>) =
-            self.zonas.values().map(|z| z.conceptos.minmax()).unzip();
+    /// Si only_net_fluxes es verdadero se calcula el mínimo y máximo de los flujos netos (calnet, refnet).
+    /// De lo contrario de todos (calpos, calneg, calnet, refpos, refneg, refnet).
+    pub fn minmaxconceptos(&self, only_net_fluxes: bool) -> (f32, f32) {
+        let (min, max): (Vec<_>, Vec<_>) = self
+            .zonas
+            .values()
+            .map(|z| z.conceptos.minmax(only_net_fluxes))
+            .unzip();
         (
             min.iter().cloned().fold(f32::NAN, f32::min),
             max.iter().cloned().fold(f32::NAN, f32::max),
@@ -395,6 +400,11 @@ impl Flujos {
         );
     }
 
+    /// Devuelve el valor mínimo y máximo de todos los flujos netos
+    pub fn minmax_net(&self) -> (f32, f32) {
+        return (self.calnet.min(self.refnet), self.calnet.max(self.refnet));
+    }
+
     /// Conversión a vectores de flujos por tipo de flujo
     pub fn to_flows(&self) -> FlujosVec {
         FlujosVec {
@@ -460,18 +470,6 @@ impl Mul<f32> for &Flujos {
     }
 }
 
-const CONCEPTOS: [&str; 9] = [
-    "Paredes Exteriores",
-    "Cubiertas",
-    "Suelos",
-    "Puentes Térmicos",
-    "Solar Ventanas",
-    "Transmisión Ventanas",
-    "Fuentes Internas",
-    "Ventilación más Infiltración",
-    "TOTAL",
-];
-
 /// Conceptos de agrupación de flujos
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct Conceptos {
@@ -536,7 +534,15 @@ impl Conceptos {
     }
 
     /// Valor mínimo y máximo de entre todos los flujos
-    pub fn minmax(&self) -> (f32, f32) {
+    /// Si se indica only_net_fluxes, solo considera los flujos netos (calnet, refnet)
+    /// De lo contrario usa todos los flujos (calpos, calneg, calnet, refpos, refneg, refnet)
+    pub fn minmax(&self, only_net_fluxes: bool) -> (f32, f32) {
+        let minmax_fn = if only_net_fluxes {
+            Flujos::minmax_net
+        } else {
+            Flujos::minmax
+        };
+
         let Conceptos {
             pext,
             cub,
@@ -561,7 +567,7 @@ impl Conceptos {
         ]
         .iter()
         .cloned()
-        .map(Flujos::minmax)
+        .map(minmax_fn)
         .unzip();
         (
             minvalues.iter().cloned().fold(f32::NAN, f32::min),
