@@ -134,9 +134,9 @@ impl EdificioLIDER {
                 z.calefaccion_meses
                     .iter()
                     .cloned()
-                    .fold(f32::NEG_INFINITY, f32::min)
+                    .fold(f32::INFINITY, f32::min)
             })
-            .fold(f32::NEG_INFINITY, f32::min);
+            .fold(f32::INFINITY, f32::min);
         // máximo de las demandas de refrigeración (valores positivos)
         let max = self
             .zonas
@@ -145,9 +145,9 @@ impl EdificioLIDER {
                 z.refrigeracion_meses
                     .iter()
                     .cloned()
-                    .fold(f32::INFINITY, f32::max)
+                    .fold(f32::NEG_INFINITY, f32::max)
             })
-            .fold(f32::INFINITY, f32::max);
+            .fold(f32::NEG_INFINITY, f32::max);
         (min, max)
     }
 
