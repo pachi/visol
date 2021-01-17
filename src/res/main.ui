@@ -206,7 +206,7 @@
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-<object class="GtkDrawingArea" id="histoconceptos">
+                          <object class="GtkDrawingArea" id="histoconceptos">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -217,77 +217,15 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkGrid" id="grid1">
+                          <object class="GtkCheckButton" id="cb_showdetail">
+                            <property name="label" translatable="yes">Mostrar detalle de flujos (cal+, cal+, ref+, ref-)</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <object class="GtkCheckButton" id="cbcalpos">
-                                <property name="label" translatable="yes">Calefacción +</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="focus_on_click">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="tooltip_text" translatable="yes">Demanda positiva en periodo de calefacción (exceso de calefacción)</property>
-                                <property name="action_name">win.cbelementos</property>
-                                <property name="use_underline">True</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="cbcalneg">
-                                <property name="label" translatable="yes">Calefacción -</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="focus_on_click">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="tooltip_text" translatable="yes">Demanda negativa en periodo de calefacción (necesidad de calefacción)</property>
-                                <property name="action_name">win.cbelementos</property>
-                                <property name="use_underline">True</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="cbrefpos">
-                                <property name="label" translatable="yes">Refrigeración +</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="focus_on_click">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="tooltip_text" translatable="yes">Demanda positiva en periodo de refrigeración (necesidad de refrigeración)</property>
-                                <property name="action_name">win.cbelementos</property>
-                                <property name="use_underline">True</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="cbrefneg">
-                                <property name="label" translatable="yes">Refrigeración -</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="focus_on_click">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="tooltip_text" translatable="yes">Demanda negativa en periodo de refrigeración (exceso de refrigeración)</property>
-                                <property name="action_name">win.cbelementos</property>
-                                <property name="use_underline">True</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">1</property>
-                              </packing>
-                            </child>
+                            <property name="can_focus">True</property>
+                            <property name="focus_on_click">False</property>
+                            <property name="receives_default">False</property>
+                            <property name="tooltip_text" translatable="yes">Muestra el detalle de composición de flujos, las ganancias y pérdidas para cada temporada y no solo los flujos netos.</property>
+                            <property name="action_name">win.show_concepts_detail</property>
+                            <property name="draw_indicator">True</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>

@@ -6,7 +6,16 @@ use std::f64::consts::PI;
 
 use gtk::WidgetExt;
 
+use crate::parsers::types::FlujosVec;
+
 use super::linear_scale;
+
+const COLOR_RED: (f64, f64, f64) = (1.0, 0.0, 0.0);
+const COLOR_RED2: (f64, f64, f64) = (1.0, 0.4, 0.4);
+const COLOR_RED3: (f64, f64, f64) = (1.0, 0.6, 0.6);
+const COLOR_BLUE: (f64, f64, f64) = (0.0, 0.0, 1.0);
+const COLOR_BLUE2: (f64, f64, f64) = (0.4, 0.4, 1.0);
+const COLOR_BLUE3: (f64, f64, f64) = (0.6, 0.6, 1.0);
 
 /// Representa histograma de composición de demanda (demandas netas y por componentes): calpos, calneg, calnet, refpos, refneg, refnet
 ///
@@ -16,15 +25,15 @@ pub fn draw_histoconceptos(
     widget: &gtk::DrawingArea,
     cr: &cairo::Context,
     cur_name: &str,
-    cal_net: &[f32],
-    ref_net: &[f32],
+    flujos: &FlujosVec,
     min: f32,
     max: f32,
+    show_detail: bool,
 ) {
-    assert!(cal_net.len() == 9 || cal_net.len() == 1);
-    assert!(ref_net.len() == 9 || ref_net.len() == 1);
+    assert!(flujos.calnet.len() == 9 || flujos.calnet.len() == 1);
+    assert!(flujos.refnet.len() == 9 || flujos.refnet.len() == 1);
 
-    let xtitles = if cal_net.len() == 9 {
+    let xtitles = if flujos.calnet.len() == 9 {
         vec![
             "Paredes exteriores",
             "Cubiertas",
@@ -40,6 +49,18 @@ pub fn draw_histoconceptos(
         vec![cur_name]
     };
 
+    let series = match show_detail {
+        false => vec![(&flujos.calnet, COLOR_RED), (&flujos.refnet, COLOR_BLUE)],
+        true => vec![
+            (&flujos.calnet, COLOR_RED),
+            (&flujos.calpos, COLOR_RED2),
+            (&flujos.calneg, COLOR_RED3),
+            (&flujos.refnet, COLOR_BLUE),
+            (&flujos.refpos, COLOR_BLUE2),
+            (&flujos.refneg, COLOR_BLUE3),
+        ],
+    };
+
     let min = ((min / 10.0 - 1.0).round() * 10.0) as f64;
     let max = ((max / 10.0 + 1.0).round() * 10.0) as f64;
 
@@ -48,7 +69,7 @@ pub fn draw_histoconceptos(
     let small_size = 11.0;
     let title = "Demandas por componente";
     let ylabel = "Demanda [kWh/m²·año]";
-    let numseries = 2.0; // TODO: por ahora son dos, pero se podrán añadir más con cal+, cal-, ref-, ref+
+    let numseries = series.len() as f64;
 
     // Posiciones
     let rect = widget.get_allocation();
@@ -123,7 +144,7 @@ pub fn draw_histoconceptos(
     // Ticks en x
     cr.set_line_width(1.0);
     cr.set_source_rgb(0.0, 0.0, 0.0);
-    for i in 0..13 {
+    for i in 0..=xtitles.len() {
         cr.move_to(og_x + (i as f64) * stepx, eg_y);
         cr.rel_line_to(0.0, ticksize);
         cr.stroke();
@@ -156,54 +177,37 @@ pub fn draw_histoconceptos(
         cr.stroke()
     }
 
-    // Barras calefacción
-    for (i, val) in cal_net.iter().enumerate() {
-        cr.new_path();
-        let x = scalex(i as f64);
-        let y = scaley(*val as f64);
-        let height = y - y0;
-        cr.rectangle(x, y, stepx / numseries, -height);
-        cr.set_source_rgb(1.0, 0.0, 0.0);
-        cr.fill_preserve();
-        cr.set_source_rgb(0.0, 0.0, 0.0);
-        cr.stroke();
-        if val.abs() >= f32::EPSILON {
-            let txt = format!("{:.1}", val);
-            let txt_ext = cr.text_extents(&txt);
-            let x_txt = scalex(i as f64 + 0.5 / numseries) - txt_ext.width / 2.0;
-            let y_txt = if *val < 0.0 {
-                y + txt_ext.height * 1.5
-            } else {
-                y - txt_ext.height * 0.5
-            };
-            cr.move_to(x_txt, y_txt);
-            cr.show_text(&txt);
+    // Barras de las series
+    for (i_serie, (vals, color)) in series.iter().enumerate(){
+        let i_serie = i_serie as f64;
+        for (i_concepto, val) in vals.iter().enumerate() {
+            // barra
+            cr.set_source_rgb(color.0, color.1, color.2);
+            cr.new_path();
+            let x = scalex(i_concepto as f64 + i_serie / numseries);
+            let y = scaley(*val as f64);
+            let height = y - y0;
+            cr.rectangle(x, y, stepx / numseries, -height);
+            cr.fill_preserve();
+            // etiquetas
+            cr.set_source_rgb(0.0, 0.0, 0.0);
+            cr.stroke();
+            if val.abs() >= f32::EPSILON {
+                let txt = format!("{:.1}", val);
+                let txt_ext = cr.text_extents(&txt);
+                let x_txt =
+                    scalex(i_concepto as f64 + (0.5 + i_serie) / numseries) - txt_ext.width / 2.0;
+                let y_txt = if *val < 0.0 {
+                    y + txt_ext.height * 1.5
+                } else {
+                    y - txt_ext.height * 0.5
+                };
+                cr.move_to(x_txt, y_txt);
+                cr.show_text(&txt);
+            }
         }
     }
-    // Barras refrigeración
-    for (i, val) in ref_net.iter().enumerate() {
-        cr.new_path();
-        let x = scalex(i as f64 + 1.0 / numseries);
-        let y = scaley(*val as f64);
-        let height = y - y0;
-        cr.rectangle(x, y, stepx / numseries, -height);
-        cr.set_source_rgb(0.0, 0.0, 1.0);
-        cr.fill_preserve();
-        cr.set_source_rgb(0.0, 0.0, 0.0);
-        cr.stroke();
-        if val.abs() > f32::EPSILON {
-            let txt = format!("{:.1}", val);
-            let txt_ext = cr.text_extents(&txt);
-            let x_txt = scalex(i as f64 + 0.5 / numseries + 1.0 / numseries) - txt_ext.width / 2.0;
-            let y_txt = if *val < 0.0 {
-                y + txt_ext.height * 1.5
-            } else {
-                y - txt_ext.height * 0.5
-            };
-            cr.move_to(x_txt, y_txt);
-            cr.show_text(&txt);
-        }
-    }
+
     // Restauramos contexto
     cr.restore();
 }

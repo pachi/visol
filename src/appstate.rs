@@ -23,6 +23,8 @@ pub struct AppState {
     pub curr_name: String,
     /// Nombre de la zona activa (es neceario para localizar un elemento de esa zona)
     pub curr_zone: String,
+    /// Muestra detalle de componentes (cal+, cal-, ref+, ref-, además de calnet y refnet)
+    pub show_detail: bool,
 }
 
 impl AppState {

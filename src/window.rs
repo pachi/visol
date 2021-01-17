@@ -113,12 +113,13 @@ pub fn build_ui(
     // Histograma de flujos por conceptos de demanda y demandas netas anuales
     let da_histoconceptos: gtk::DrawingArea = ui.get_object("histoconceptos").unwrap();
     da_histoconceptos.connect_draw(
-        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
+        clone!(@weak state, @strong ui => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
             let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos()).unwrap_or((-21.2, 22.8));
             let curr_name = st.curr_name.as_str();
-            let flujos = st.concepts_data();
-            draw_histoconceptos(widget, cr, curr_name, &flujos.calnet, &flujos.refnet, min, max);
+            let flujos = &st.concepts_data();
+            let show_detail = st.show_detail;
+            draw_histoconceptos(widget, cr, curr_name, flujos, min, max, show_detail);
             Inhibit(true)
         }),
     );
@@ -251,6 +252,8 @@ pub fn build_ui(
             };
             sb.push(0, &format!("Seleccionado {}: {}", tipo, nombre));
             labelzona.set_property("label", &txt1).expect("Fallo al establecer etiqueta");
+            // Actualizar controles
+            update_graphs(ui.clone());
         }
     }));
 
@@ -272,12 +275,13 @@ pub fn build_ui(
     }));
     window.add_action(&action);
 
-    // win.cbelementos
-    let action = gio::SimpleAction::new("cbelementos", None);
-    action.connect_activate(clone!(@weak window => move |_, _| {
-        // TODO: Ver antigua función cbelementos en lugar de esto
+    // win.show_concepts_detail
+    let action = gio::SimpleAction::new("show_concepts_detail", None);
+    action.connect_activate(clone!(@weak state, @strong ui => move |_, _| {
         // Determina si se añaden calpos, calneg, refpos, refneg en las gráficas
-        window.close();
+        let mut model = state.borrow_mut();
+        model.show_detail = !model.show_detail;
+        update_graphs(ui.clone());
     }));
     window.add_action(&action);
     window.show_all();
@@ -290,6 +294,26 @@ pub fn build_ui(
     tv.set_cursor::<gtk::TreeViewColumn>(&gtk::TreePath::from_indicesv(&[0]), None, false);
 }
 
+/// Update the app graphs to show new data
+fn update_graphs(ui: gtk::Builder) {
+    let da_histoconceptos: gtk::DrawingArea = ui.get_object("histoconceptos").unwrap();
+    da_histoconceptos.queue_draw();
+    let da_histomeses: gtk::DrawingArea = ui.get_object("histomeses").unwrap();
+    da_histomeses.queue_draw();
+    let da_calpos: gtk::DrawingArea = ui.get_object("pieglobalcalpos").unwrap();
+    da_calpos.queue_draw();
+    let da_calneg: gtk::DrawingArea = ui.get_object("pieglobalcalneg").unwrap();
+    da_calneg.queue_draw();
+    let da_refpos: gtk::DrawingArea = ui.get_object("pieglobalrefpos").unwrap();
+    da_refpos.queue_draw();
+    let da_refneg: gtk::DrawingArea = ui.get_object("pieglobalrefneg").unwrap();
+    da_refneg.queue_draw();
+    let da_zonasgraph: gtk::DrawingArea = ui.get_object("zonasgraph").unwrap();
+    da_zonasgraph.queue_draw();
+}
+
+
+/// Load data from file path into the state and application ui
 fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Builder) {
     let sb: gtk::Statusbar = ui.get_object("statusbar").unwrap();
     let window: gtk::ApplicationWindow = ui.get_object("window").unwrap();
