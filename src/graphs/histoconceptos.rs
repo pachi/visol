@@ -19,8 +19,7 @@ const COLOR_BLUE3: (f64, f64, f64) = (0.6, 0.6, 1.0);
 
 /// Representa histograma de composición de demanda (demandas netas y por componentes): calpos, calneg, calnet, refpos, refneg, refnet
 ///
-/// El eje horizontal representa los componentes de demanda y el eje vertical la demanda anual para el mismo [kWh/m²a]
-/// TODO: ver cómo mostrar detalle (igual no hacer detalle con tanta granularidad)
+/// El eje horizontal representa los conceptos de demanda y el eje vertical la demanda anual para el mismo [kWh/m²a]
 pub fn draw_histoconceptos(
     widget: &gtk::DrawingArea,
     cr: &cairo::Context,
@@ -50,14 +49,17 @@ pub fn draw_histoconceptos(
     };
 
     let series = match show_detail {
-        false => vec![(&flujos.calnet, COLOR_RED), (&flujos.refnet, COLOR_BLUE)],
+        false => vec![
+            ("cal", &flujos.calnet, COLOR_RED),
+            ("ref", &flujos.refnet, COLOR_BLUE),
+        ],
         true => vec![
-            (&flujos.calnet, COLOR_RED),
-            (&flujos.calpos, COLOR_RED2),
-            (&flujos.calneg, COLOR_RED3),
-            (&flujos.refnet, COLOR_BLUE),
-            (&flujos.refpos, COLOR_BLUE2),
-            (&flujos.refneg, COLOR_BLUE3),
+            ("cal", &flujos.calnet, COLOR_RED),
+            ("cal+", &flujos.calpos, COLOR_RED2),
+            ("cal-", &flujos.calneg, COLOR_RED3),
+            ("ref", &flujos.refnet, COLOR_BLUE),
+            ("ref+", &flujos.refpos, COLOR_BLUE2),
+            ("ref-", &flujos.refneg, COLOR_BLUE3),
         ],
     };
 
@@ -178,8 +180,32 @@ pub fn draw_histoconceptos(
     }
 
     // Barras de las series
-    for (i_serie, (vals, color)) in series.iter().enumerate(){
+    cr.set_source_rgb(0.0, 0.0, 0.0);
+    cr.set_line_width(0.5);
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.set_font_size(small_size);
+    let extents = cr.text_extents("cal+");
+    let (name_width, name_height) = (extents.width, extents.height);
+
+    for (i_serie, (serie_name, vals, color)) in series.iter().enumerate() {
         let i_serie = i_serie as f64;
+        // Leyendas
+        cr.move_to(
+            og_x + i_serie * (name_width * 3.0),
+            htitulo + 2.0 * name_height,
+        );
+        cr.show_text(serie_name);
+        cr.rectangle(
+            og_x + i_serie * (name_width * 3.0) + name_width * 1.25,
+            htitulo + 2.0 * name_height,
+            name_width,
+            -name_height,
+        );
+        cr.stroke_preserve();
+        cr.set_source_rgb(color.0, color.1, color.2);
+        cr.fill();
+
+        // Barras
         for (i_concepto, val) in vals.iter().enumerate() {
             // barra
             cr.set_source_rgb(color.0, color.1, color.2);
@@ -189,7 +215,7 @@ pub fn draw_histoconceptos(
             let height = y - y0;
             cr.rectangle(x, y, stepx / numseries, -height);
             cr.fill_preserve();
-            // etiquetas
+            // etiqueta
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.stroke();
             if val.abs() >= f32::EPSILON {
