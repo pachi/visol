@@ -145,9 +145,9 @@ pub fn build_ui(
     let da_calpos: gtk::DrawingArea = ui.get_object("pieglobalcalpos").unwrap();
     da_calpos.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: obtener del modelo, en el estado actual
-            let demandas = [0.0, 0.0, 3.2, 17.1, 0.1, 22.8, 7.2, 0.1];
-            draw_piechart(widget, cr, &demandas, PieMode::CalPos);
+            let st = state.borrow();
+            let flujos = &st.concepts_data().calpos;
+            draw_piechart(widget, cr, flujos, PieMode::CalPos);
             Inhibit(true)
         }),
     );
@@ -156,9 +156,9 @@ pub fn build_ui(
     let da_calneg: gtk::DrawingArea = ui.get_object("pieglobalcalneg").unwrap();
     da_calneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: obtener del modelo, en el estado actual
-            let demandas = [0.0, 3.2, 17.1, 0.1, 22.8, 7.2, 0.1, 0.0];
-            draw_piechart(widget, cr, &demandas, PieMode::CalNeg);
+            let st = state.borrow();
+            let flujos = &st.concepts_data().calneg;
+            draw_piechart(widget, cr, &flujos, PieMode::CalNeg);
             Inhibit(true)
         }),
     );
@@ -167,9 +167,9 @@ pub fn build_ui(
     let da_refpos: gtk::DrawingArea = ui.get_object("pieglobalrefpos").unwrap();
     da_refpos.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: obtener del modelo, en el estado actual
-            let demandas = [3.2, 17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0];
-            draw_piechart(widget, cr, &demandas, PieMode::RefPos);
+            let st = state.borrow();
+            let flujos = &st.concepts_data().refpos;
+            draw_piechart(widget, cr, &flujos, PieMode::RefPos);
             Inhibit(true)
         }),
     );
@@ -178,11 +178,9 @@ pub fn build_ui(
     let da_refneg: gtk::DrawingArea = ui.get_object("pieglobalrefneg").unwrap();
     da_refneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-
-            // TODO: obtener del modelo, en el estado actual
-            let demandas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-            //let demandas = [17.1, 0.1, 22.8, 7.2, 0.1, 0.0, 0.0, 3.2];
-            draw_piechart(widget, cr, &demandas, PieMode::RefNeg);
+            let st = state.borrow();
+            let flujos = &st.concepts_data().refneg;
+            draw_piechart(widget, cr, &flujos, PieMode::RefNeg);
             gtk::Inhibit(false)
         }),
     );
