@@ -73,7 +73,7 @@ struct Point {
 /// Genera datos para la representación de la gráfica
 ///
 /// Devuelve lista ordenada de elementos Point {label, value, value_pct, start_angle, end_angle}
-fn build_data(demandas: &[f64; 8]) -> Vec<Point> {
+fn build_data(demandas: &[f64]) -> Vec<Point> {
     let demanda_total: f64 = demandas.iter().map(|v: &f64| v.abs()).sum();
     let demandas_pct = demandas.iter().map(|demanda| {
         if demanda_total != 0.0 {
@@ -122,9 +122,17 @@ fn build_data(demandas: &[f64; 8]) -> Vec<Point> {
 pub fn draw_piechart(
     widget: &gtk::DrawingArea,
     cr: &cairo::Context,
-    demandas: &[f64; 8],
+    demandas: &[f32],
     mode: PieMode,
 ) {
+    // Si los datos tienen 9 valores es que incluyen al final el total... y lo eliminamos
+    let len = demandas.len();
+    let demandas = if len == 8 {
+        demandas
+    } else {
+        &demandas[..len - 1]
+    };
+
     let (title, colores) = match mode {
         PieMode::CalPos => ("Ganancias térmicas, periodo de calefacción", HEATING_COLORS),
         PieMode::CalNeg => ("Pérdidas térmicas, periodo de calefacción", HEATING_COLORS),
@@ -138,8 +146,9 @@ pub fn draw_piechart(
         ),
     };
 
-    let mut data = build_data(demandas);
-    let demanda_total: f64 = demandas.iter().map(|v: &f64| v.abs()).sum();
+    let demandas = demandas.iter().map(|v| v.abs() as f64).collect::<Vec<_>>();
+    let mut data = build_data(&demandas);
+    let demanda_total: f64 = demandas.iter().map(|v| v.abs()).sum();
 
     // Posiciones
     let rect = widget.get_allocation();
@@ -195,7 +204,7 @@ pub fn draw_piechart(
         cr.move_to(ox - extents.width / 2.0, oy - extents.height / 2.0);
         cr.show_text(txt);
         cr.restore();
-        return
+        return;
     }
 
     // Cuñas del círculo y radios
@@ -224,12 +233,19 @@ pub fn draw_piechart(
 
     // Leyendas
     // Reordenamos las cuñas de arriba abajo (eje Y positivo hacia abajo) para colocar etiquetas
-    data.sort_by(|a, b| (a.mid_angle.sin()).partial_cmp(&(b.mid_angle.sin())).unwrap());
+    data.sort_by(|a, b| {
+        (a.mid_angle.sin())
+            .partial_cmp(&(b.mid_angle.sin()))
+            .unwrap()
+    });
 
-    // Posiciones del texto
+    // Omite puntos con menos del 0.01%
+    let skip_point = |p: &Point| (p.end_angle - p.start_angle) < 0.01 * 2.0 *  PI / 100.0;
+
+    // Posiciones del texto a cada lado, descontando los % < 0.01%
     let txt_width = textmaxwidth - 40.0; // ancho disponible y margen de 20px por cada lado
-    let numlabels_right: i32 = data.iter().filter(|p| p.is_right).count() as i32;
-    let numlabels_left = 8 - numlabels_right;
+    let numlabels_right: i32 = data.iter().filter(|p| p.is_right && !skip_point(p)).count() as i32;
+    let numlabels_left: i32 = data.iter().filter(|p| !p.is_right && !skip_point(p)).count() as i32;
 
     let layout = widget.create_pango_layout(Some("Prueba"));
     let fontdesc = pango::FontDescription::from_string("Arial Normal 10.5");
@@ -259,6 +275,9 @@ pub fn draw_piechart(
             mid_angle,
             is_right,
         } = point;
+
+        // Omite valores < 0.01 %
+        if skip_point(point) {continue};
 
         // Porcentajes, solo si hay hueco
         let extents = cr.text_extents(&value_pct);
