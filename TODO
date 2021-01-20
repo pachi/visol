@@ -1,6 +1,3 @@
-- https://gtk-rs.org/docs-src/tutorial/cross
-- Buen ejemplo de treeview en gtkrs https://stackoverflow.com/questions/57135341/how-to-right-justify-numeric-data-in-list-store-tree-view-using-gtk-rs
+- Compilación a windows: https://gtk-rs.org/docs-src/tutorial/cross
 - Ir migrando código
-    - Hacer gráficas HistoElementos, etc
-- Poner leyendas a histomeses e histoconceptos
-- Permitir detalle de componentes (controlado por numseries)
+    - Hacer gráficas de Zonas
