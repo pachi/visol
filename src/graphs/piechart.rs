@@ -7,6 +7,8 @@ use std::f64::consts::PI;
 use gtk::WidgetExt;
 use itertools::izip;
 
+use crate::parsers::types::FlujosVec;
+
 const COOLING_COLORS: [(f64, f64, f64); 8] = [
     (0.0, 1.0, 1.0),
     (0.0, 0.875, 1.0),
@@ -122,30 +124,33 @@ fn build_data(demandas: &[f64]) -> Vec<Point> {
 pub fn draw_piechart(
     widget: &gtk::DrawingArea,
     cr: &cairo::Context,
-    demandas: &[f32],
+    flujos: &FlujosVec,
     mode: PieMode,
 ) {
-    // Si los datos tienen 9 valores es que incluyen al final el total... y lo eliminamos
-    let len = demandas.len();
-    let demandas = if len == 8 {
-        demandas
-    } else {
-        &demandas[..len - 1]
-    };
 
-    let (title, colores) = match mode {
-        PieMode::CalPos => ("Ganancias térmicas, periodo de calefacción", HEATING_COLORS),
-        PieMode::CalNeg => ("Pérdidas térmicas, periodo de calefacción", HEATING_COLORS),
+    let (title, colores, demandas) = match mode {
+        PieMode::CalPos => ("Ganancias térmicas, periodo de calefacción", HEATING_COLORS, &flujos.calpos),
+        PieMode::CalNeg => ("Pérdidas térmicas, periodo de calefacción", HEATING_COLORS, &flujos.calneg),
         PieMode::RefPos => (
             "Ganancias térmicas, periodo de refrigeración",
             COOLING_COLORS,
+            &flujos.refpos
         ),
         PieMode::RefNeg => (
             "Pérdidas térmicas, periodo de refrigeración",
             COOLING_COLORS,
+            &flujos.refneg
         ),
     };
 
+    // Si los datos tienen 9 valores es que incluyen al final el total... y lo eliminamos
+    let len = demandas.len();
+    let demandas = if len == 8 {
+        &demandas
+    } else {
+        &demandas[..len - 1]
+    };
+    
     let demandas = demandas.iter().map(|v| v.abs() as f64).collect::<Vec<_>>();
     let mut data = build_data(&demandas);
     let demanda_total: f64 = demandas.iter().map(|v| v.abs()).sum();

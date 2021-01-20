@@ -118,7 +118,7 @@ pub fn build_ui(
             let show_detail = st.show_detail;
             let curr_name = st.curr_name.as_str();
             let flujos = &st.concepts_data();
-            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos(!show_detail)).unwrap_or((-21.2, 22.8));
+            let (min, max) = st.edificio.as_ref().map(|e| e.minmaxconceptos(!show_detail)).unwrap_or((-15.0, 15.0));
             draw_histoconceptos(widget, cr, curr_name, flujos, min, max, show_detail);
             Inhibit(true)
         }),
@@ -130,13 +130,8 @@ pub fn build_ui(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
             let (min, max) = st.edificio.as_ref().map(|e| e.minmaxmeses()).unwrap_or((-15.0,15.0));
-            if let Some((cal_meses, ref_meses)) = st.calref_monthly_data() {
-                // Edificio, planta o zona
-                draw_histomeses(widget, cr, &cal_meses, &ref_meses, min, max)
-            } else {
-                // Componente o nada
-                draw_histomeses(widget, cr, &vec![0.0; 12], &vec![0.0; 12], min, max)
-            };
+            let (cal_meses, ref_meses) = st.calref_monthly_data();
+            draw_histomeses(widget, cr, &cal_meses, &ref_meses, min, max);
             Inhibit(true)
         }),
     );
@@ -146,7 +141,7 @@ pub fn build_ui(
     da_calpos.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
-            let flujos = &st.concepts_data().calpos;
+            let flujos = &st.concepts_data();
             draw_piechart(widget, cr, flujos, PieMode::CalPos);
             Inhibit(true)
         }),
@@ -157,8 +152,7 @@ pub fn build_ui(
     da_calneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
-            let flujos = &st.concepts_data().calneg;
-            draw_piechart(widget, cr, &flujos, PieMode::CalNeg);
+            draw_piechart(widget, cr, &st.concepts_data(), PieMode::CalNeg);
             Inhibit(true)
         }),
     );
@@ -168,8 +162,7 @@ pub fn build_ui(
     da_refpos.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
-            let flujos = &st.concepts_data().refpos;
-            draw_piechart(widget, cr, &flujos, PieMode::RefPos);
+            draw_piechart(widget, cr, &st.concepts_data(), PieMode::RefPos);
             Inhibit(true)
         }),
     );
@@ -179,8 +172,7 @@ pub fn build_ui(
     da_refneg.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
-            let flujos = &st.concepts_data().refneg;
-            draw_piechart(widget, cr, &flujos, PieMode::RefNeg);
+            draw_piechart(widget, cr, &st.concepts_data(), PieMode::RefNeg);
             gtk::Inhibit(false)
         }),
     );

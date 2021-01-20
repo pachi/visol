@@ -128,16 +128,16 @@ impl AppState {
 
     /// Datos mensuales de demanda de calefacción y refrigeración
     /// No está definido para elementos constructivos o sin edificio definido
-    pub fn calref_monthly_data(&self) -> Option<(Vec<f32>, Vec<f32>)> {
+    pub fn calref_monthly_data(&self) -> (Vec<f32>, Vec<f32>) {
         match self.curr_obj_type {
             TipoObjeto::Edificio => {
-                return self
+                self
                     .edificio
                     .as_ref()
                     .map(|e| (e.calefaccion_meses.clone(), e.refrigeracion_meses.clone()))
             }
             TipoObjeto::Planta => {
-                return self.edificio.as_ref().and_then(|e| {
+                self.edificio.as_ref().and_then(|e| {
                     e.plantas
                         .iter()
                         .find(|p| p.nombre == self.curr_name)
@@ -145,14 +145,14 @@ impl AppState {
                 })
             }
             TipoObjeto::Zona => {
-                return self.edificio.as_ref().and_then(|e| {
+                self.edificio.as_ref().and_then(|e| {
                     e.zonas
                         .get(&self.curr_name)
                         .map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone()))
                 })
             }
-            TipoObjeto::Elemento | TipoObjeto::None => return None,
-        }
+            TipoObjeto::Elemento | TipoObjeto::None => None,
+        }.unwrap_or((vec![0.0; 12], vec![0.0; 12]))
     }
 
     /// Valores de flujos de calor por conceptos
