@@ -104,8 +104,10 @@ pub fn build_ui(
     let da_zonasgraph: gtk::DrawingArea = ui.get_object("zonasgraph").unwrap();
     da_zonasgraph.connect_draw(
         clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
-            // TODO: ver qué datos se mandan y evitamos pasar state
-            draw_zonasgraph(widget, cr, state);
+            let st = state.borrow();
+            let curr_name = st.curr_name.as_str();
+            let zonedata = st.bindata.as_ref().and_then(|data| data.zonas.get(curr_name));
+            draw_zonasgraph(widget, cr, zonedata);
             Inhibit(false)
         }),
     );

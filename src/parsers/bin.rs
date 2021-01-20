@@ -4,19 +4,19 @@
 //! en el archivo LeeZonasLIDER_2.h
 
 // use std::io::prelude::*;
-use std::convert::{TryFrom, TryInto};
+use std::{collections::BTreeMap, convert::{TryFrom, TryInto}};
 use std::io::{BufReader, Read};
 use std::{fs::File, path::Path};
 
 type Error = Box<dyn std::error::Error + 'static>;
 
 // TODO: probar a hacer type BinData = Vec<ZonaLider> ya que no necesitamos el numzonas, con len()
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct BinData {
     /// Número de zonas
     pub numzonas: u32,
     /// Datos de zonas
-    pub zonas: Vec<ZonaLider>,
+    pub zonas: BTreeMap<String, ZonaLider>,
 }
 
 // 285896 bytes
@@ -41,10 +41,11 @@ impl BinData {
             file.read_exact(buffer)?;
             bytezones.set_len(numzonas as usize);
         }
-        // Convierte desde vector de ZonaLiderFFI a vector de ZonaLider
-        let mut zonas = Vec::<ZonaLider>::with_capacity(numzonas as usize);
+        // Convierte desde vector de ZonaLiderFFI a HashMap de ZonaLider
+        let mut zonas = BTreeMap::<String, ZonaLider>::new();
         for bytezone in bytezones.iter() {
-            zonas.push(bytezone.try_into()?);
+            let zona: ZonaLider = bytezone.try_into()?;
+            zonas.insert(zona.nombre.clone(), zona);
         }
         // Devolvemos BinData
         Ok(Self { numzonas, zonas })
@@ -311,7 +312,7 @@ mod tests {
         eprintln!("Parsear binfile: {}", testfile.display());
         let res = BinData::from_file(testfile).unwrap();
         assert_eq!(10, res.numzonas);
-        let zone0 = &res.zonas[0];
+        let zone0 = &res.zonas["P01_E01"];
         assert_eq!(zone0.nombre, "P01_E01");
         assert_eq!(zone0.area, 25.0373287200928);
         assert_eq!(zone0.multiplicador, 1);
