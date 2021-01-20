@@ -127,19 +127,26 @@ pub fn draw_piechart(
     flujos: &FlujosVec,
     mode: PieMode,
 ) {
-
     let (title, colores, demandas) = match mode {
-        PieMode::CalPos => ("Ganancias térmicas, periodo de calefacción", HEATING_COLORS, &flujos.calpos),
-        PieMode::CalNeg => ("Pérdidas térmicas, periodo de calefacción", HEATING_COLORS, &flujos.calneg),
+        PieMode::CalPos => (
+            "Ganancias térmicas, periodo de calefacción",
+            HEATING_COLORS,
+            &flujos.calpos,
+        ),
+        PieMode::CalNeg => (
+            "Pérdidas térmicas, periodo de calefacción",
+            HEATING_COLORS,
+            &flujos.calneg,
+        ),
         PieMode::RefPos => (
             "Ganancias térmicas, periodo de refrigeración",
             COOLING_COLORS,
-            &flujos.refpos
+            &flujos.refpos,
         ),
         PieMode::RefNeg => (
             "Pérdidas térmicas, periodo de refrigeración",
             COOLING_COLORS,
-            &flujos.refneg
+            &flujos.refneg,
         ),
     };
 
@@ -150,7 +157,7 @@ pub fn draw_piechart(
     } else {
         &demandas[..len - 1]
     };
-    
+
     let demandas = demandas.iter().map(|v| v.abs() as f64).collect::<Vec<_>>();
     let mut data = build_data(&demandas);
     let demanda_total: f64 = demandas.iter().map(|v| v.abs()).sum();
@@ -245,12 +252,15 @@ pub fn draw_piechart(
     });
 
     // Omite puntos con menos del 0.01%
-    let skip_point = |p: &Point| (p.end_angle - p.start_angle) < 0.01 * 2.0 *  PI / 100.0;
+    let skip_point = |p: &Point| (p.end_angle - p.start_angle) < 0.01 * 2.0 * PI / 100.0;
 
     // Posiciones del texto a cada lado, descontando los % < 0.01%
     let txt_width = textmaxwidth - 40.0; // ancho disponible y margen de 20px por cada lado
     let numlabels_right: i32 = data.iter().filter(|p| p.is_right && !skip_point(p)).count() as i32;
-    let numlabels_left: i32 = data.iter().filter(|p| !p.is_right && !skip_point(p)).count() as i32;
+    let numlabels_left: i32 = data
+        .iter()
+        .filter(|p| !p.is_right && !skip_point(p))
+        .count() as i32;
 
     let layout = widget.create_pango_layout(Some("Prueba"));
     let fontdesc = pango::FontDescription::from_string("Arial Normal 10.5");
@@ -282,7 +292,9 @@ pub fn draw_piechart(
         } = point;
 
         // Omite valores < 0.01 %
-        if skip_point(point) {continue};
+        if skip_point(point) {
+            continue;
+        };
 
         // Porcentajes, solo si hay hueco
         let extents = cr.text_extents(&value_pct);
@@ -296,21 +308,18 @@ pub fn draw_piechart(
         }
 
         // Líneas
+        let x_start_lead = ox + 1.02 * radius * mid_angle.cos();
+        let y_start_lead = oy + 1.02 * radius * mid_angle.sin();
         cr.set_source_rgb(0.5, 0.5, 0.5);
-        cr.move_to(
-            ox + 1.02 * radius * mid_angle.cos(),
-            oy + 1.02 * radius * mid_angle.sin(),
-        );
-
+        cr.move_to(x_start_lead, y_start_lead);
         if *is_right {
-            cr.rel_line_to(10.0, 0.0);
+            cr.line_to(ox + radius + 10.0, y_start_lead);
             cr.line_to(txt_xpos_right - 10.0, txt_ypos_right + line_height as f64);
-            cr.stroke();
         } else {
-            cr.rel_line_to(-10.0, 0.0);
+            cr.line_to(ox - radius - 10.0, y_start_lead);
             cr.line_to(textmaxwidth - 10.0, txt_ypos_left + line_height as f64);
-            cr.stroke();
         };
+        cr.stroke();
 
         // Textos
         cr.set_source_rgb(0.0, 0.0, 0.0);
