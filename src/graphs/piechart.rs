@@ -9,6 +9,8 @@ use itertools::izip;
 
 use crate::parsers::types::FlujosVec;
 
+use super::draw_watermark;
+
 const COOLING_COLORS: [(f64, f64, f64); 8] = [
     (0.0, 1.0, 1.0),
     (0.0, 0.875, 1.0),
@@ -333,6 +335,8 @@ pub fn draw_piechart(
         };
         pangocairo::show_layout(cr, &layout);
     }
+
+    draw_watermark(&cr, width - height * 0.05, htitulo);
 
     // Restauramos contexto
     cr.restore();

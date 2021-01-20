@@ -21,7 +21,8 @@ use config::Config;
 // Ver https://github.com/gtk-rs/examples/blob/master/src/bin/gtktest.rs
 
 const APP_ID: &str = "com.github.pachi.visol";
-const APP_NAME: &str = "ViSOL";
+pub(crate) const APP_NAME: &str = env!("CARGO_PKG_NAME");
+pub(crate) const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     // Comprobación del directorio de ejecución

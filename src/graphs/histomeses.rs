@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 
 use gtk::WidgetExt;
 
-use super::linear_scale;
+use super::{NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE, draw_watermark, linear_scale};
 
 // Pintar gráficas en gtkdrawingarea:
 // Ejemplos en: https://stackoverflow.com/questions/10250748/draw-an-image-on-drawing-area
@@ -36,9 +36,6 @@ pub fn draw_histomeses(
     let min = ((min / 10.0 - 1.0).round() * 10.0) as f64;
     let max = ((max / 10.0 + 1.0).round() * 10.0) as f64;
 
-    let title_size = 20.0;
-    let normal_size = 14.0;
-    let small_size = 11.0;
     let title = "Demanda neta mensual";
     let xlabel = "Mes";
     let ylabel = "Demanda [kWh/m²·mes]";
@@ -73,7 +70,7 @@ pub fn draw_histomeses(
 
     // Título
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
-    cr.set_font_size(title_size);
+    cr.set_font_size(TITLE_SIZE);
     cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(title);
     cr.move_to(
@@ -86,15 +83,12 @@ pub fn draw_histomeses(
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(0.5);
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
-    cr.set_font_size(small_size);
+    cr.set_font_size(SMALL_SIZE);
 
     let extents = cr.text_extents("cal+");
     let (name_width, name_height) = (extents.width, extents.height);
     // cal
-    cr.move_to(
-        x0,
-        htitulo + 2.0 * name_height,
-    );
+    cr.move_to(x0, htitulo + 2.0 * name_height);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.show_text("cal");
     cr.rectangle(
@@ -107,10 +101,7 @@ pub fn draw_histomeses(
     cr.set_source_rgb(1.0, 0.0, 0.0);
     cr.fill();
     // ref
-    cr.move_to(
-        x0 + 3.0 * name_width,
-        htitulo + 2.0 * name_height,
-    );
+    cr.move_to(x0 + 3.0 * name_width, htitulo + 2.0 * name_height);
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.show_text("ref");
     cr.rectangle(
@@ -127,7 +118,7 @@ pub fn draw_histomeses(
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
 
     // YLabel
-    cr.set_font_size(normal_size);
+    cr.set_font_size(NORMAL_SIZE);
     cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(ylabel);
     cr.move_to(margin, og_y + (hgrafica + extents.width) / 2.0);
@@ -141,7 +132,7 @@ pub fn draw_histomeses(
     cr.show_text(xlabel);
     // Meses
     cr.set_line_width(1.0);
-    cr.set_font_size(small_size);
+    cr.set_font_size(SMALL_SIZE);
     let labelw = cr.text_extents("Sep").width;
     let mut xpos = og_x + (stepx - labelw) / 2.0;
     let ypos = eg_y + ticksize * 2.0;
@@ -227,7 +218,9 @@ pub fn draw_histomeses(
             cr.show_text(&txt);
         }
     }
+
+    draw_watermark(&cr, width - margin, htitulo);
+
     // Restauramos contexto
     cr.restore();
-
 }

@@ -6,9 +6,8 @@ use std::f64::consts::PI;
 
 use gtk::WidgetExt;
 
+use super::{draw_watermark, linear_scale, NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE};
 use crate::parsers::types::FlujosVec;
-
-use super::linear_scale;
 
 const COLOR_RED: (f64, f64, f64) = (1.0, 0.0, 0.0);
 const COLOR_RED2: (f64, f64, f64) = (1.0, 0.4, 0.4);
@@ -66,9 +65,6 @@ pub fn draw_histoconceptos(
     let min = ((min / 10.0 - 1.0).round() * 10.0) as f64;
     let max = ((max / 10.0 + 1.0).round() * 10.0) as f64;
 
-    let title_size = 20.0;
-    let normal_size = 14.0;
-    let small_size = 11.0;
     let title = "Demandas por componente";
     let ylabel = "Demanda [kWh/m²·año]";
     let numseries = series.len() as f64;
@@ -103,7 +99,7 @@ pub fn draw_histoconceptos(
 
     // Título
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
-    cr.set_font_size(title_size);
+    cr.set_font_size(TITLE_SIZE);
     cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(title);
     cr.move_to(
@@ -116,7 +112,7 @@ pub fn draw_histoconceptos(
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
 
     // YLabel
-    cr.set_font_size(normal_size);
+    cr.set_font_size(NORMAL_SIZE);
     cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(ylabel);
     cr.move_to(margin, og_y + (hgrafica + extents.width) / 2.0);
@@ -127,10 +123,10 @@ pub fn draw_histoconceptos(
 
     // Etiquetas de componentes
     cr.set_line_width(1.0);
-    cr.set_font_size(small_size);
+    cr.set_font_size(SMALL_SIZE);
 
     let layout = widget.create_pango_layout(None);
-    let fontdesc = pango::FontDescription::from_string(&format!("Arial Normal {}", small_size));
+    let fontdesc = pango::FontDescription::from_string(&format!("Arial Normal {}", SMALL_SIZE));
     layout.set_font_description(Some(&fontdesc));
     layout.set_alignment(pango::Alignment::Center);
     layout.set_width(pango::units_from_double((stepx * 0.9).round()));
@@ -183,7 +179,7 @@ pub fn draw_histoconceptos(
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(0.5);
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
-    cr.set_font_size(small_size);
+    cr.set_font_size(SMALL_SIZE);
     let extents = cr.text_extents("cal+");
     let (name_width, name_height) = (extents.width, extents.height);
 
@@ -233,6 +229,9 @@ pub fn draw_histoconceptos(
             }
         }
     }
+
+    // Marca de Visol
+    draw_watermark(&cr, width - margin, htitulo);
 
     // Restauramos contexto
     cr.restore();

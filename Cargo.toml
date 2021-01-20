@@ -1,5 +1,5 @@
 [package]
-name = "visol-rs"
+name = "visol"
 version = "0.1.0"
 authors = ["Rafael Villar Burke <pachi@ietcc.csic.es>"]
 edition = "2018"
@@ -18,5 +18,3 @@ glib = { version = "0.10.1" }
 itertools = "0.10"
 pango = "0.9"
 pangocairo = "0.10"
-plotters = { git= "https://github.com/38/plotters" }
-plotters-cairo = "0.3.1"
