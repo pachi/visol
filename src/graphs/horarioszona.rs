@@ -100,24 +100,38 @@ pub fn draw_zonasgraph(
         let xscale = linear_scale(0 as f64, 365 as f64, g_x0, g_x0 + g_width);
         let yscale = linear_scale(min_lim as f64, max_lim as f64, g1_y1, g1_y0);
 
+        // Relleno de t_media con t_maxima (ir con t_media y volver con t_maxima)
+        cr.move_to(xscale(0.0), yscale(t_mean[0] as f64));
+        t_mean.iter().enumerate().skip(1).for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
+        t_max.iter().enumerate().rev().for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
+        cr.set_source_rgb(1.0, 0.5, 0.5);
+        cr.fill();
+        // Relleno de t_media con t_mínima (ir con t_media y volver con t_mínima)
+        cr.move_to(xscale(0.0), yscale(t_mean[0] as f64));
+        t_mean.iter().enumerate().skip(1).for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
+        t_min.iter().enumerate().rev().for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
+        cr.set_source_rgb(0.5, 0.5, 1.0);
+        cr.fill();
+
+        // Línea de t_media
         cr.set_line_width(2.0);
         cr.move_to(xscale(0.0), yscale(t_mean[0] as f64));
         t_mean.iter().enumerate().skip(1).for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
         cr.stroke();
-        
+        // Línea de t_mínima
         cr.set_line_width(0.5);
         cr.set_source_rgb(0.0, 0.0, 1.0);
         cr.move_to(xscale(0.0), yscale(t_min[0] as f64));
         t_min.iter().enumerate().skip(1).for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
         cr.stroke();
-
+        // Línea de t_máxima
         cr.set_line_width(0.5);
         cr.set_source_rgb(1.0, 0.0, 0.0);
         cr.move_to(xscale(0.0), yscale(t_max[0] as f64));
         t_max.iter().enumerate().skip(1).for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
         cr.stroke();
 
-        // TODO: hacer rellenos entre líneas: haciendo ida y vuelta con t_mean y t_max.reversed() y cerrando...
+        // TODO: hacer líneas verticales finas de cada cambio de mes, leyendas horiz de mes, y escala vertical de temperaturas
 
         // Gráfica 2 - Carga térmica diaria (sensible, latente, total)
         let g2_text = "Carga térmica diaria (sensible, latente, total)";
