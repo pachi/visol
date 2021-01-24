@@ -13,6 +13,16 @@ const MESES: [&str; 12] = [
     "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
 
+/// Rounder to limit line "fuzziness"
+#[inline]
+pub fn rounder(x: f64) -> f64 {
+    let fract = x.fract();
+    if fract < 0.5 {
+        x.trunc() + 0.5
+    } else {
+        x.trunc() + 1.5
+    }
+}
 
 /// Traduce del dominio [x1, x2] al rango [x1, x2]
 pub fn linear_scale(domx1: f64, domx2: f64, rangex1: f64, rangex2: f64) -> impl Fn(f64) -> f64 {
