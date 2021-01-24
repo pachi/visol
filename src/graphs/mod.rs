@@ -8,6 +8,11 @@ pub mod piechart;
 const TITLE_SIZE: f64 = 20.0;
 const NORMAL_SIZE: f64 = 14.0;
 const SMALL_SIZE: f64 = 11.0;
+/// Meses del año
+const MESES: [&str; 12] = [
+    "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
+
 
 /// Traduce del dominio [x1, x2] al rango [x1, x2]
 pub fn linear_scale(domx1: f64, domx2: f64, rangex1: f64, rangex2: f64) -> impl Fn(f64) -> f64 {

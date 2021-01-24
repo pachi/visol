@@ -6,16 +6,11 @@ use std::f64::consts::PI;
 
 use gtk::WidgetExt;
 
-use super::{NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE, draw_watermark, linear_scale};
+use super::{draw_watermark, linear_scale, MESES, NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE};
 
 // Pintar gráficas en gtkdrawingarea:
 // Ejemplos en: https://stackoverflow.com/questions/10250748/draw-an-image-on-drawing-area
 // https://github.com/GuillaumeGomez/process-viewer/blob/master/src/graph.rs
-
-/// Meses del año
-const MESES: [&str; 12] = [
-    "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-];
 
 /// Representa histograma de demanda mensual para una zona o el edificio
 ///
