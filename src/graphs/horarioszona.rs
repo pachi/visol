@@ -54,6 +54,7 @@ pub fn draw_zonasgraph(
         let te = cr.text_extents(txt);
         cr.move_to((widget_width - te.width) / 2.0, widget_height * 0.5);
         cr.show_text(txt);
+        cr.restore();
         return;
     }
 
