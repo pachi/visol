@@ -113,11 +113,11 @@ pub fn draw_histomeses(
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
 
     // YLabel
+    cr.save();
     cr.set_font_size(NORMAL_SIZE);
     cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(ylabel);
     cr.move_to(margin, og_y + (hgrafica + extents.width) / 2.0);
-    cr.save();
     cr.rotate(-PI / 2.0);
     cr.show_text(ylabel);
     cr.restore();

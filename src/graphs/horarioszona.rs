@@ -2,9 +2,13 @@
 //!
 //! Las pérdidas o ganancias se definen mediante las 8 categorías de HULC más el total
 
+use std::f64::consts::PI;
+
 use gtk::WidgetExt;
 
-use super::{draw_watermark, linear_scale, rounder, MESES, NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE};
+use super::{
+    draw_watermark, linear_scale, nice_range, rounder, MESES, NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE,
+};
 use crate::parsers::bin::ZonaLider;
 
 /// Dibuja gráfica con los datos horarios de zona
@@ -21,7 +25,7 @@ pub fn draw_zonasgraph(
     let widget_height = rect.height as f64;
     let htitle = 0.1 * widget_height;
     let subtitle_block_height = 0.05 * widget_height;
-    let margin = 0.05 * widget_height;
+    let margin = 0.07 * widget_height;
 
     let x0 = 2.0 * margin;
     let x1 = widget_width - x0;
@@ -67,6 +71,7 @@ pub fn draw_zonasgraph(
     let subtitle = "Temperatura diaria (máxima, media, mínima) [ºC]";
     draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
     draw_months(&cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Temperatura [ºC]", margin * 0.75, (y0 + y1) / 2.0);
 
     // Valores remuestreados con media, máxima y mínima diaria
     let resampled_temp = data.t_real.chunks_exact(24);
@@ -105,7 +110,7 @@ pub fn draw_zonasgraph(
     // Etiquetas Y
     let labels: Vec<(f64, String)> = [17.0, 20.0, 26.0, 28.0]
         .iter()
-        .map(|v| (yscale(*v), format!("{:.0}", v)))
+        .map(|v| (yscale(*v), format!("{:.1}", v)))
         .collect();
     ylabels(cr, labels.as_slice(), ticksize, x0, true);
 
@@ -175,6 +180,7 @@ pub fn draw_zonasgraph(
     let subtitle = "Carga térmica diaria (sensible, total) [W]";
     draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
     draw_months(&cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Carga térmica [W]", margin * 0.75, (y0 + y1) / 2.0);
 
     let q_sen: Vec<_> = data
         .q_sen
@@ -193,19 +199,13 @@ pub fn draw_zonasgraph(
     let q_tot: Vec<f32> = q_sen.iter().zip(q_lat.iter()).map(|(a, b)| a + b).collect();
     let q_min = q_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b));
     let q_max = q_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
-    let minmax_margin = (q_max - q_min).abs() * 0.1;
-
-    let yscale = linear_scale(
-        (q_min - minmax_margin).floor() as f64,
-        (q_max + minmax_margin).ceil() as f64,
-        y1,
-        y0,
-    );
+    let range = nice_range(q_min as f64, q_max as f64, 4);
+    let yscale = linear_scale(range[0], range[range.len()-1], y1, y0);
 
     // Etiquetas Y
-    let labels: Vec<(f64, String)> = [q_min as f64, 0.0, q_max as f64]
+    let labels: Vec<(f64, String)> = range //[q_min as f64, 0.0, q_max as f64]
         .iter()
-        .map(|v| (yscale(*v), format!("{:.1}", v)))
+        .map(|v| (yscale(*v as f64), format!("{:.1}", v)))
         .collect();
     ylabels(cr, labels.as_slice(), ticksize, x0, true);
 
@@ -252,7 +252,14 @@ pub fn draw_zonasgraph(
     let y1 = y0 + height;
     let subtitle = "Caudal diario de ventilación e infiltraciones [m³/h; 1/h]";
     draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(&cr, x0, x1, y0, y1);
+    draw_months(cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Caudal [m³/h]", margin * 0.75, (y0 + y1) / 2.0);
+    draw_ytitle(
+        cr,
+        "Caudal [1/h]",
+        widget_width - margin * 0.25,
+        (y0 + y1) / 2.0,
+    );
 
     let volumen = data.volumen; // m3
 
@@ -264,26 +271,20 @@ pub fn draw_zonasgraph(
         .map(|chunk| chunk.iter().sum::<f32>() / 24.0 * 3600.0 / 1.225)
         .collect();
 
-    let v_min = v_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b));
+    let v_min = v_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b)).min(0.0);
     let v_max = v_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
-    let minmax_margin = (v_max.max(1.0) - v_min.min(0.0)).abs() * 0.1;
-
-    let yscale = linear_scale(
-        (v_min.min(0.0) - minmax_margin).floor() as f64,
-        (v_max.max(1.0) + minmax_margin).ceil() as f64,
-        y1,
-        y0,
-    );
+    let range = nice_range(v_min as f64, v_max as f64, 4);
+    let yscale = linear_scale(range[0], range[range.len()-1], y1, y0);
 
     // Etiquetas Y
     // m3/h
-    let labels: Vec<(f64, String)> = [0.0, v_min as f64, v_max as f64]
+    let labels: Vec<(f64, String)> = range
         .iter()
         .map(|v| (yscale(*v), format!("{:.1}", v)))
         .collect();
     ylabels(cr, labels.as_slice(), ticksize, x0, true);
     // 1/h
-    let labels: Vec<(f64, String)> = [0.0, v_min as f64, v_max as f64]
+    let labels: Vec<(f64, String)> = range
         .iter()
         .map(|v| (yscale(*v), format!("{:.1}", v / volumen as f64)))
         .collect();
@@ -316,8 +317,33 @@ pub fn draw_zonasgraph(
     cr.line_to(x1, rounder(yscale(0.0)));
     cr.stroke();
 
+    // Volumen y q_medio
+    let v_mean: f32 = (v_tot.iter().sum::<f32>() / v_tot.len() as f32) / volumen;
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.set_font_size(SMALL_SIZE);
+    cr.set_source_rgb(0.2, 0.2, 0.2);
+    cr.move_to(x0 + width * 0.01, y1 - 0.15 * height);
+    cr.show_text(&format!(
+        "Vol. zona = {:.1} m³/h, Caudal medio = {:.2} ren/h",
+        volumen, v_mean
+    ));
+
     draw_watermark(&cr, widget_width - widget_height * 0.05, htitle);
 
+    cr.restore();
+}
+
+/// Dibuja etiqueta eje Y con centro en (x, y)
+fn draw_ytitle(cr: &cairo::Context, title: &str, x: f64, y: f64) {
+    // YLabel
+    cr.save();
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.set_font_size(NORMAL_SIZE * 0.8);
+    cr.set_source_rgb(0.5, 0.5, 0.5);
+    let extents = cr.text_extents(title);
+    cr.move_to(x - extents.height / 2.0, y + extents.width / 2.0);
+    cr.rotate(-PI / 2.0);
+    cr.show_text(title);
     cr.restore();
 }
 
