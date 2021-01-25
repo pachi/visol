@@ -200,7 +200,7 @@ pub fn draw_zonasgraph(
     let q_min = q_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b));
     let q_max = q_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
     let range = nice_range(q_min as f64, q_max as f64, 4);
-    let yscale = linear_scale(range[0], range[range.len()-1], y1, y0);
+    let yscale = linear_scale(range[0], range[range.len() - 1], y1, y0);
 
     // Etiquetas Y
     let labels: Vec<(f64, String)> = range //[q_min as f64, 0.0, q_max as f64]
@@ -274,7 +274,7 @@ pub fn draw_zonasgraph(
     let v_min = v_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b)).min(0.0);
     let v_max = v_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
     let range = nice_range(v_min as f64, v_max as f64, 4);
-    let yscale = linear_scale(range[0], range[range.len()-1], y1, y0);
+    let yscale = linear_scale(range[0], range[range.len() - 1], y1, y0);
 
     // Etiquetas Y
     // m3/h
