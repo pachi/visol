@@ -29,9 +29,9 @@ pub struct AppState {
 
 impl AppState {
     /// Crea estado inicial de la aplicación
+    /// ¿Tendría sentido usar un path por defecto
     pub fn new() -> Self {
         Self {
-            // TODO: usar aquí path por defecto
             ..Default::default()
         }
     }
@@ -130,29 +130,24 @@ impl AppState {
     /// No está definido para elementos constructivos o sin edificio definido
     pub fn calref_monthly_data(&self) -> (Vec<f32>, Vec<f32>) {
         match self.curr_obj_type {
-            TipoObjeto::Edificio => {
-                self
-                    .edificio
-                    .as_ref()
-                    .map(|e| (e.calefaccion_meses.clone(), e.refrigeracion_meses.clone()))
-            }
-            TipoObjeto::Planta => {
-                self.edificio.as_ref().and_then(|e| {
-                    e.plantas
-                        .iter()
-                        .find(|p| p.nombre == self.curr_name)
-                        .map(|p| (p.calefaccion_meses(&e), p.refrigeracion_meses(&e)))
-                })
-            }
-            TipoObjeto::Zona => {
-                self.edificio.as_ref().and_then(|e| {
-                    e.zonas
-                        .get(&self.curr_name)
-                        .map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone()))
-                })
-            }
+            TipoObjeto::Edificio => self
+                .edificio
+                .as_ref()
+                .map(|e| (e.calefaccion_meses.clone(), e.refrigeracion_meses.clone())),
+            TipoObjeto::Planta => self.edificio.as_ref().and_then(|e| {
+                e.plantas
+                    .iter()
+                    .find(|p| p.nombre == self.curr_name)
+                    .map(|p| (p.calefaccion_meses(&e), p.refrigeracion_meses(&e)))
+            }),
+            TipoObjeto::Zona => self.edificio.as_ref().and_then(|e| {
+                e.zonas
+                    .get(&self.curr_name)
+                    .map(|z| (z.calefaccion_meses.clone(), z.refrigeracion_meses.clone()))
+            }),
             TipoObjeto::Elemento | TipoObjeto::None => None,
-        }.unwrap_or((vec![0.0; 12], vec![0.0; 12]))
+        }
+        .unwrap_or((vec![0.0; 12], vec![0.0; 12]))
     }
 
     /// Valores de flujos de calor por conceptos
@@ -192,7 +187,6 @@ impl AppState {
                 })
                 .map(|c| c.to_flows()),
             TipoObjeto::None => None,
-            _ => None,
         }
         .unwrap_or_default()
     }

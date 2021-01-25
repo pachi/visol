@@ -186,12 +186,10 @@ impl EdificioLIDER {
 #[derive(Clone, Debug, Default)]
 /// Planta de LIDER
 /// Contiene un conjunto de zonas.
+/// No aparecen multiplicadores de planta (no parece usarse en el .RES), sino que se traslada a las zonas
 pub struct PlantaLIDER {
     /// Nombre de la planta
     pub nombre: String,
-    // TODO: multiplicador de planta??
-    // TODO: comprobar si se usa el multiplicador de planta (no parece usarse en el .RES) y se traslada a las zonas
-    // pub multiplicador: i32,
     /// Zonas de la planta
     pub zonas: Vec<String>,
 }
@@ -202,12 +200,6 @@ impl PlantaLIDER {
             nombre: nombre.to_string(),
             ..Default::default()
         }
-    }
-
-    /// Multiplicador de planta
-    /// TODO: comprobar que es 1 y que el multiplicador se lleva a las zonas
-    pub fn multiplicador(&self) -> i32 {
-        1
     }
 
     /// Superficie de la planta en m² [m²]
@@ -782,7 +774,7 @@ mod tests {
 
     #[test]
     fn add_elements() {
-        let c1 = Elemento {
+        Elemento {
             nombre: "uno".to_string(),
             flujos: Flujos {
                 calpos: 1.0,
@@ -793,7 +785,7 @@ mod tests {
                 refnet: 6.0,
             },
         };
-        let c2 = Elemento {
+        Elemento {
             nombre: "dos".to_string(),
             flujos: Flujos {
                 calpos: 1.0,
@@ -804,5 +796,6 @@ mod tests {
                 refnet: 6.0,
             },
         };
+
     }
 }
