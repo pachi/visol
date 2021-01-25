@@ -325,7 +325,7 @@ pub fn draw_piechart(
 
         // Textos
         cr.set_source_rgb(0.0, 0.0, 0.0);
-        layout.set_text(&format!("{}\n{:.2} kWh/m2·a ({})", label, value, value_pct));
+        layout.set_text(&format!("{}\n{:.1} kWh/m2·a ({})", label, value, value_pct));
         if *is_right {
             cr.move_to(txt_xpos_right, txt_ypos_right);
             txt_ypos_right += line_height as f64 * 3.0;
