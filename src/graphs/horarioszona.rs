@@ -203,7 +203,7 @@ pub fn draw_zonasgraph(
     let yscale = linear_scale(range[0], range[range.len() - 1], y1, y0);
 
     // Etiquetas Y
-    let labels: Vec<(f64, String)> = range //[q_min as f64, 0.0, q_max as f64]
+    let labels: Vec<(f64, String)> = range
         .iter()
         .map(|v| (yscale(*v as f64), format!("{:.1}", v)))
         .collect();
