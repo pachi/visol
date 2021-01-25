@@ -11,7 +11,7 @@ impl EdificioLIDER {
     pub fn from_file<S: AsRef<Path>>(path: S) -> Result<EdificioLIDER, Error> {
         eprintln!("Parsear resfile: {}", path.as_ref().display());
 
-        let mut edificio = EdificioLIDER::default();
+        let mut edificio = EdificioLIDER {nombre: "Edificio".to_string(), ..Default::default()};
         let resdata = read_latin1_file(path)?;
 
         let mut lines = &mut resdata.lines();
