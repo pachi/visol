@@ -38,18 +38,18 @@ pub fn check_current_dir() {
     let cargo_manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut current_dir = std::env::current_dir().expect("Cannot read current dir");
 
-    println!("Ruta de cargo manifest: {}", cargo_manifest_dir.display());
-    println!(
-        "Ruta del ejecutable: {}",
-        std::env::current_exe().unwrap().display()
-    );
-    println!("Directorio actual inicial: {}", current_dir.display());
+    // println!("Ruta de cargo manifest: {}", cargo_manifest_dir.display());
+    // println!(
+    //     "Ruta del ejecutable: {}",
+    //     std::env::current_exe().unwrap().display()
+    // );
+    // println!("Directorio actual inicial: {}", current_dir.display());
 
     // Si estamos arrancando en modo desarrollador cambiamos al subdirectorio ./src
     if current_dir == cargo_manifest_dir {
         current_dir.push("./src");
         std::env::set_current_dir(&current_dir).expect("Couldn't change current dir");
-        println!("Directorio actual final: {}", &current_dir.display());
+        // println!("Directorio actual final: {}", &current_dir.display());
     };
 }
 
