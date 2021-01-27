@@ -121,13 +121,18 @@ pub fn draw_histomeses(
     cr.rotate(-PI / 2.0);
     cr.show_text(ylabel);
     cr.restore();
+
     // XLabel
+    cr.set_font_size(NORMAL_SIZE);
+    cr.set_source_rgb(0.5, 0.5, 0.5);
     let extents = cr.text_extents(xlabel);
     cr.move_to((width - extents.width) / 2.0, height - margin / 2.0);
     cr.show_text(xlabel);
+
     // Meses
     cr.set_line_width(1.0);
     cr.set_font_size(SMALL_SIZE);
+    cr.set_source_rgb(0.5, 0.5, 0.5);
     let labelw = cr.text_extents("Sep").width;
     let mut xpos = og_x + (stepx - labelw) / 2.0;
     let ypos = eg_y + ticksize * 2.0;

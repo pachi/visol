@@ -123,10 +123,8 @@ pub fn draw_histoconceptos(
 
     // Etiquetas de componentes
     cr.set_line_width(1.0);
-    cr.set_font_size(SMALL_SIZE);
-
     let layout = widget.create_pango_layout(None);
-    let fontdesc = pango::FontDescription::from_string(&format!("Arial Normal {}", SMALL_SIZE));
+    let fontdesc = pango::FontDescription::from_string(&format!("Arial Normal {}", SMALL_SIZE * 72.0/96.0));
     layout.set_font_description(Some(&fontdesc));
     layout.set_alignment(pango::Alignment::Center);
     layout.set_width(pango::units_from_double((stepx * 0.9).round()));
