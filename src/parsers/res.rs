@@ -11,7 +11,10 @@ impl EdificioLIDER {
     pub fn from_file<S: AsRef<Path>>(path: S) -> Result<EdificioLIDER, Error> {
         // eprintln!("Parsear resfile: {}", path.as_ref().display());
 
-        let mut edificio = EdificioLIDER {nombre: "Edificio".to_string(), ..Default::default()};
+        let mut edificio = EdificioLIDER {
+            nombre: "Edificio".to_string(),
+            ..Default::default()
+        };
         let resdata = read_latin1_file(path)?;
 
         let mut lines = &mut resdata.lines();
@@ -315,6 +318,15 @@ mod tests {
         assert_eq!(res.plantas.len(), 2);
         assert_eq!(res.plantas[0].zonas.len(), 4);
         assert_eq!(res.plantas[1].zonas.len(), 6);
-        assert_eq!(1, 1);
+    }
+
+    #[test]
+    fn read_res_testfile_hulc2019() {
+        let mut testfile = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        testfile.push("./src/data/test2019.res");
+        let res = EdificioLIDER::from_file(testfile).unwrap();
+        assert_eq!(res.plantas.len(), 4);
+        assert_eq!(res.plantas[0].zonas.len(), 1);
+        assert_eq!(res.plantas[1].zonas.len(), 3);
     }
 }

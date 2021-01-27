@@ -517,7 +517,7 @@ impl Conceptos {
                 "Solar Ventanas" => res.huecos_solar = flujos,
                 "Transmisión Ventanas" => res.huecos_trans = flujos,
                 "Fuentes Internas" => res.fint = flujos,
-                "Infiltración" => res.vent = flujos,
+                "Infiltración" | "Ventilación más Infiltración" => res.vent = flujos,
                 "TOTAL" => res.total = flujos,
                 _ => Err(format!("Error al procesar concepto {}", name))?,
             }
