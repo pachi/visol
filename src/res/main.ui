@@ -169,20 +169,15 @@
                     <property name="scrollable">True</property>
                     <property name="group_name">nbpages</property>
                     <child>
-                      <object class="GtkBox" id="bzonas">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
+                      <object class="GtkScrolledWindow" id="scrolledwindowtext">
+                        <property name="can_focus">True</property>
+                        <property name="no_show_all">True</property>
                         <child>
-                          <object class="GtkDrawingArea" id="zonasgraph">
+                          <object class="GtkTextView" id="textview">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can_focus">True</property>
+                            <property name="buffer">textbuffer</property>
                           </object>
-                          <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
                         </child>
                       </object>
                       <packing>
@@ -190,13 +185,12 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelzonas">
+                      <object class="GtkLabel" id="labelcomponentes">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Zonas</property>
+                        <property name="label" translatable="yes">Componentes</property>
                       </object>
                       <packing>
-                        <property name="position">7</property>
                         <property name="tab_fill">False</property>
                       </packing>
                     </child>
@@ -252,10 +246,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelcomponentes">
+                      <object class="GtkLabel" id="labelmeses">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Componentes</property>
+                        <property name="label" translatable="yes">Meses</property>
                       </object>
                       <packing>
                         <property name="position">1</property>
@@ -284,10 +278,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelmeses">
+                      <object class="GtkLabel" id="labelcalpos">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Meses</property>
+                        <property name="label" translatable="yes">Cal+</property>
                       </object>
                       <packing>
                         <property name="position">2</property>
@@ -316,10 +310,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelcalpos">
+                      <object class="GtkLabel" id="labelcalneg">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Cal+</property>
+                        <property name="label" translatable="yes">Cal-</property>
                       </object>
                       <packing>
                         <property name="position">3</property>
@@ -348,10 +342,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelcalneg">
+                      <object class="GtkLabel" id="labelrefpos">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Cal-</property>
+                        <property name="label" translatable="yes">Ref+</property>
                       </object>
                       <packing>
                         <property name="position">4</property>
@@ -380,10 +374,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelrefpos">
+                      <object class="GtkLabel" id="labelrefneg">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Ref+</property>
+                        <property name="label" translatable="yes">Ref-</property>
                       </object>
                       <packing>
                         <property name="position">5</property>
@@ -414,10 +408,10 @@
                       </packing>
                     </child>
                     <child type="tab">
-                      <object class="GtkLabel" id="labelrefneg">
+                      <object class="GtkLabel" id="labelzonas">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Ref-</property>
+                        <property name="label" translatable="yes">Zonas</property>
                       </object>
                       <packing>
                         <property name="position">6</property>
@@ -425,15 +419,20 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkScrolledWindow" id="scrolledwindowtext">
-                        <property name="can_focus">True</property>
-                        <property name="no_show_all">True</property>
+                      <object class="GtkBox" id="bzonas">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkTextView" id="textview">
+                          <object class="GtkDrawingArea" id="zonasgraph">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="buffer">textbuffer</property>
+                            <property name="can_focus">False</property>
                           </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
                         </child>
                       </object>
                       <packing>
