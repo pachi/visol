@@ -1,0 +1,14 @@
+<Include>
+  <?if $(sys.BUILDARCH) = x64 ?>
+    <?define ProductName = "ViSoL Análisis de demanda (64 bit)" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+  <?else ?>
+    <?define ProductName = "ViSoL Análisis de demanda" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+  <?endif ?>
+  <?define ProductVersion = "@VERSION@"?>
+  <?define Manufacturer = "RVB"?>
+  <?define TopDir = "..\..\"?>
+  <?define LicenseFile = "$(var.TopDir)\win32\installer\COPYING.rtf"?>
+  <?define UpgradeCode = "{090D042C-A0F7-A6BD-A4FA-B1783C491F5B}"?>
+</Include>
