@@ -44,7 +44,7 @@ wix:
 	"${_wixdir}/bin/light.exe" -ext WixUtilExtension -ext WixUIExtension visol.wixobj binaries.wixobj -o "${APP_MSI}"
 
 zip:
-	cd release && zip -r ../${APP_ZIP} *
+	cd ${RELEASE_DIR} && zip -r ../${APP_ZIP} *
 
 compile:
 	cargo build --release
