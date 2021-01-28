@@ -169,32 +169,6 @@
                     <property name="scrollable">True</property>
                     <property name="group_name">nbpages</property>
                     <child>
-                      <object class="GtkScrolledWindow" id="scrolledwindowtext">
-                        <property name="can_focus">True</property>
-                        <property name="no_show_all">True</property>
-                        <child>
-                          <object class="GtkTextView" id="textview">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="buffer">textbuffer</property>
-                          </object>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="position">7</property>
-                      </packing>
-                    </child>
-                    <child type="tab">
-                      <object class="GtkLabel" id="labelcomponentes">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Componentes</property>
-                      </object>
-                      <packing>
-                        <property name="tab_fill">False</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkBox" id="belementos">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -246,6 +220,37 @@
                       </packing>
                     </child>
                     <child type="tab">
+                      <object class="GtkLabel" id="labelcomponentes">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Componentes</property>
+                      </object>
+                      <packing>
+                        <property name="tab_fill">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="bmeses">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="histomeses">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child type="tab">
                       <object class="GtkLabel" id="labelmeses">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -257,12 +262,12 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="bmeses">
+                      <object class="GtkBox" id="bcalpos">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkDrawingArea" id="histomeses">
+                          <object class="GtkDrawingArea" id="pieglobalcalpos">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -289,12 +294,12 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="bcalpos">
+                      <object class="GtkBox" id="bcalneg">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkDrawingArea" id="pieglobalcalpos">
+                          <object class="GtkDrawingArea" id="pieglobalcalneg">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -321,12 +326,12 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="bcalneg">
+                      <object class="GtkBox" id="brefpos">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkDrawingArea" id="pieglobalcalneg">
+                          <object class="GtkDrawingArea" id="pieglobalrefpos">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -353,12 +358,14 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="brefpos">
+                      <object class="GtkBox" id="brefneg">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkDrawingArea" id="pieglobalrefpos">
+                          <object class="GtkDrawingArea" id="pieglobalrefneg">
+                            <property name="width_request">780</property>
+                            <property name="height_request">500</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -385,14 +392,12 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="brefneg">
+                      <object class="GtkBox" id="bzonas">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkDrawingArea" id="pieglobalrefneg">
-                            <property name="width_request">780</property>
-                            <property name="height_request">500</property>
+                          <object class="GtkDrawingArea" id="zonasgraph">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -419,20 +424,15 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="bzonas">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
+                      <object class="GtkScrolledWindow" id="scrolledwindowtext">
+                        <property name="can_focus">True</property>
+                        <property name="no_show_all">True</property>
                         <child>
-                          <object class="GtkDrawingArea" id="zonasgraph">
+                          <object class="GtkTextView" id="textview">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can_focus">True</property>
+                            <property name="buffer">textbuffer</property>
                           </object>
-                          <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
                         </child>
                       </object>
                       <packing>
