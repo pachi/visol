@@ -40,8 +40,8 @@ wix:
 	# TODO: check resources/*.wix, resources/COPYING.rtf, resources/*.bmp, resources/*.svg
 	# TODO: install MSITools or Wix Toolset
 	"${_wixdir}/bin/heat.exe" dir ${RELEASE_DIR} -gg -dr INSTALLDIR -cg binaries -sfrag -sreg -srd -suid -template fragment -out binaries.wxs
-  	"${_wixdir}/bin/candle.exe" -arch x64 visol.wxs binaries.wxs
-  	"${_wixdir}/bin/light.exe" -ext WixUtilExtension -ext WixUIExtension visol.wixobj binaries.wixobj -o "${APP_MSI}"
+	"${_wixdir}/bin/candle.exe" -arch x64 visol.wxs binaries.wxs
+	"${_wixdir}/bin/light.exe" -ext WixUtilExtension -ext WixUIExtension visol.wixobj binaries.wixobj -o "${APP_MSI}"
 
 zip:
 	cd release && zip -r ../${APP_ZIP} *
