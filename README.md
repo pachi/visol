@@ -64,7 +64,7 @@ PARA UN PROPÓSITO PARTICULAR.
     con la pestaña Componentes activa, muestra las **componentes de la
     demanda** para el elemento seleccionado:
 
-<img src="./resources/shots/pantallazo1.png" width="75%" align="center" title="Pantalla inicial  por componentes"/>
+![Pantalla inicial por componentes](resources/shots/pantallazo1.png?raw=true | width=75%)
 
 -   La pestaña Meses muestra los **valores netos de la demanda neta
     mensual del elemento seleccionado** a lo largo de los meses del año,
