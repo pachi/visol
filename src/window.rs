@@ -429,5 +429,7 @@ fn show_about(window: &gtk::ApplicationWindow) {
         .expect("aboutdialog not found");
     about_dialog.set_modal(true);
     about_dialog.set_transient_for(Some(window));
-    about_dialog.show();
+    about_dialog.run();
+    // Any response hides the dialog
+    about_dialog.hide();
 }
