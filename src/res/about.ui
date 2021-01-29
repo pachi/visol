@@ -11,13 +11,13 @@
     <property name="type_hint">dialog</property>
     <property name="program_name">VisoL</property>
     <property name="version">1.0</property>
-    <property name="copyright" translatable="yes">(c) 2014-20 Rafael Villar Burke, Daniel Jiménez González
+    <property name="copyright" translatable="yes">(c) 2014-2021 Rafael Villar Burke, Daniel Jiménez González
 Publicado bajo licencia GNU GPL v2.0 o posterior
 http://spdx.org/licenses/GPL-2.0+</property>
     <property name="comments" translatable="yes">Visor de archivos de resultados de LIDER</property>
     <property name="website">http://www.rvburke.com/visorlider.html</property>
     <property name="website_label" translatable="yes">http://www.rvburke.com/visorlider.html</property>
-    <property name="logo">splash.jpg</property>
+    <property name="logo">splash.png</property>
     <child type="titlebar">
       <placeholder/>
     </child>
