@@ -15,3 +15,5 @@ target_*/
 .flatpak-builder/
 app/
 repo/
+resources/splash.jpg
+resources/splash.png
