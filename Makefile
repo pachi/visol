@@ -113,3 +113,7 @@ install_msys2:
 	pacman -Syu --needed --noconfirm mingw-w64-x86_64-toolchain base-devel mingw-w64-x86_64-adwaita-icon-theme mingw-w64-x86_64-gtk3 mingw-w64-x86_64-librsvg
 	# pacman -Syu --needed --noconfirm mingw-w64-x86_64-glade
 	# pacman -Syu --needed --noconfirm mingw-w64-x86_64-python3-gobject
+
+python_deps:
+	# python deps for makesplash
+	sudo apt install python-gi-cairo python-pil
