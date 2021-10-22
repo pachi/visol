@@ -432,10 +432,10 @@ impl std::str::FromStr for Flujos {
     }
 }
 
-impl Add<&Flujos> for &Flujos {
+impl Add<Flujos> for Flujos {
     type Output = Flujos;
 
-    fn add(self, other: &Flujos) -> Self::Output {
+    fn add(self, other: Flujos) -> Self::Output {
         Self::Output {
             calpos: self.calpos + other.calpos,
             calneg: self.calneg + other.calneg,
@@ -447,7 +447,7 @@ impl Add<&Flujos> for &Flujos {
     }
 }
 
-impl Mul<f32> for &Flujos {
+impl Mul<f32> for Flujos {
     type Output = Flujos;
 
     fn mul(self, other: f32) -> Self::Output {
@@ -654,29 +654,29 @@ impl Conceptos {
 // Ver https://stackoverflow.com/questions/28005134/how-do-i-implement-the-add-trait-for-a-reference-to-a-struct
 // para la implementación completa de operaciones
 
-impl Add<&Conceptos> for &Conceptos {
-    type Output = Conceptos;
-
-    fn add(self, other: &Conceptos) -> Self::Output {
-        Self::Output {
-            pext: &self.pext + &other.pext,
-            cub: &self.cub + &other.cub,
-            suelos: &self.suelos + &other.suelos,
-            pts: &self.pts + &other.pts,
-            huecos_solar: &self.huecos_solar + &other.huecos_solar,
-            huecos_trans: &self.huecos_trans + &other.huecos_trans,
-            fint: &self.fint + &other.fint,
-            vent: &self.vent + &other.vent,
-            total: &self.total + &other.total,
-        }
-    }
-}
-
 impl Add<Conceptos> for Conceptos {
     type Output = Conceptos;
 
     fn add(self, other: Conceptos) -> Self::Output {
-        &self + &other
+        Self::Output {
+            pext: self.pext + other.pext,
+            cub: self.cub + other.cub,
+            suelos: self.suelos + other.suelos,
+            pts: self.pts + other.pts,
+            huecos_solar: self.huecos_solar + other.huecos_solar,
+            huecos_trans: self.huecos_trans + other.huecos_trans,
+            fint: self.fint + other.fint,
+            vent: self.vent + other.vent,
+            total: self.total + other.total,
+        }
+    }
+}
+
+impl Add<&Conceptos> for &Conceptos {
+    type Output = Conceptos;
+
+    fn add(self, other: &Conceptos) -> Self::Output {
+        *self + *other
     }
 }
 
@@ -684,7 +684,7 @@ impl Add<&Conceptos> for Conceptos {
     type Output = Conceptos;
 
     fn add(self, other: &Conceptos) -> Self::Output {
-        &self + other
+        self + *other
     }
 }
 
@@ -692,25 +692,7 @@ impl Add<Conceptos> for &Conceptos {
     type Output = Conceptos;
 
     fn add(self, other: Conceptos) -> Self::Output {
-        self + &other
-    }
-}
-
-impl Mul<f32> for &Conceptos {
-    type Output = Conceptos;
-
-    fn mul(self, other: f32) -> Self::Output {
-        Self::Output {
-            pext: &self.pext * other,
-            cub: &self.cub * other,
-            suelos: &self.suelos * other,
-            pts: &self.pts * other,
-            huecos_solar: &self.huecos_solar * other,
-            huecos_trans: &self.huecos_trans * other,
-            fint: &self.fint * other,
-            vent: &self.vent * other,
-            total: &self.total * other,
-        }
+        *self + other
     }
 }
 
@@ -718,7 +700,25 @@ impl Mul<f32> for Conceptos {
     type Output = Conceptos;
 
     fn mul(self, other: f32) -> Self::Output {
-        &self * other
+        Self::Output {
+            pext: self.pext * other,
+            cub: self.cub * other,
+            suelos: self.suelos * other,
+            pts: self.pts * other,
+            huecos_solar: self.huecos_solar * other,
+            huecos_trans: self.huecos_trans * other,
+            fint: self.fint * other,
+            vent: self.vent * other,
+            total: self.total * other,
+        }
+    }
+}
+
+impl Mul<f32> for &Conceptos {
+    type Output = Conceptos;
+
+    fn mul(self, other: f32) -> Self::Output {
+        *self * other
     }
 }
 
@@ -726,7 +726,7 @@ impl Mul<&Conceptos> for f32 {
     type Output = Conceptos;
 
     fn mul(self, other: &Conceptos) -> Self::Output {
-        other * self
+        *other * self
     }
 }
 
@@ -734,7 +734,7 @@ impl Mul<Conceptos> for f32 {
     type Output = Conceptos;
 
     fn mul(self, other: Conceptos) -> Self::Output {
-        &other * self
+        other * self
     }
 }
 
@@ -770,31 +770,31 @@ impl std::str::FromStr for Elemento {
 
 // #[cfg(test)]
 // mod tests {
-    // use super::*;
+// use super::*;
 
-    // #[test]
-    // fn add_elements() {
-    //     Elemento {
-    //         nombre: "uno".to_string(),
-    //         flujos: Flujos {
-    //             calpos: 1.0,
-    //             calneg: 2.0,
-    //             calnet: 3.0,
-    //             refpos: 4.0,
-    //             refneg: 5.0,
-    //             refnet: 6.0,
-    //         },
-    //     };
-    //     Elemento {
-    //         nombre: "dos".to_string(),
-    //         flujos: Flujos {
-    //             calpos: 1.0,
-    //             calneg: 2.0,
-    //             calnet: 3.0,
-    //             refpos: 4.0,
-    //             refneg: 5.0,
-    //             refnet: 6.0,
-    //         },
-    //     };
-    // }
+// #[test]
+// fn add_elements() {
+//     Elemento {
+//         nombre: "uno".to_string(),
+//         flujos: Flujos {
+//             calpos: 1.0,
+//             calneg: 2.0,
+//             calnet: 3.0,
+//             refpos: 4.0,
+//             refneg: 5.0,
+//             refnet: 6.0,
+//         },
+//     };
+//     Elemento {
+//         nombre: "dos".to_string(),
+//         flujos: Flujos {
+//             calpos: 1.0,
+//             calneg: 2.0,
+//             calnet: 3.0,
+//             refpos: 4.0,
+//             refneg: 5.0,
+//             refnet: 6.0,
+//         },
+//     };
+// }
 // }
