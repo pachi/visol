@@ -201,7 +201,7 @@ pub fn build_ui(
                 // Genera nombre de archivo
                 let st = state.borrow();
                 let timestamp = Local::now().format(out_fmt).to_string();
-                let name = child.get_buildable_name().unwrap_or("grafica".to_string());
+                let name = child.get_buildable_name().unwrap_or_else(|| "grafica".to_string());
                 let filename = format!("{}-{}-{}-{}.png", out_basename, name, timestamp, st.filename().expect("Sin nombre de archivo para el modelo actual").display());
                 let pathname = st.dirname().expect("Sin ruta para el modelo actual").join(filename);
                 let mut outfile = std::fs::File::create(&pathname).expect("No se ha podido crear el archivo");

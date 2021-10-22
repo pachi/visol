@@ -305,6 +305,7 @@ pub struct ZonaLiderFFI {
 mod tests {
     use super::*;
 
+    #[allow(clippy::float_cmp)]
     #[test]
     fn read_bin_testfile() {
         let mut testfile = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -314,10 +315,10 @@ mod tests {
         assert_eq!(10, res.numzonas);
         let zone0 = &res.zonas["P01_E01"];
         assert_eq!(zone0.nombre, "P01_E01");
-        assert_eq!(zone0.area, 25.0373287200928);
+        assert_eq!(zone0.area, 25.037_329);
         assert_eq!(zone0.multiplicador, 1);
-        assert_eq!(zone0.volumen, 62.5933227539062);
-        assert_eq!(zone0.p, &[1.0, -0.9554443359375]);
+        assert_eq!(zone0.volumen, 62.593_323);
+        assert_eq!(zone0.p, &[1.0, -0.955_444_34]);
         assert_eq!(
             zone0.g,
             &[

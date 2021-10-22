@@ -40,11 +40,11 @@ impl AppState {
     pub fn filename(&self) -> Option<&Path> {
         self.respath
             .as_ref()
-            .map_or(None, |v| v.file_stem().map(Path::new))
+            .and_then(|v| v.file_stem().map(Path::new))
     }
     /// Directorio del archivo activo
     pub fn dirname(&self) -> Option<&Path> {
-        self.respath.as_ref().map_or(None, |v| v.parent())
+        self.respath.as_ref().and_then(|v| v.parent())
     }
 
     /// Localiza archivo bin en directorio de proyecto
@@ -78,7 +78,7 @@ impl AppState {
                             // Caso 3: primer .bin encontrado
                             binfiles.get(0).unwrap().clone()
                         };
-                        Some(PathBuf::from(respathdir.join(&binfile)))
+                        Some(respathdir.join(&binfile))
                     }
                     None => None,
                 }
@@ -138,7 +138,7 @@ impl AppState {
                 e.plantas
                     .iter()
                     .find(|p| p.nombre == self.curr_name)
-                    .map(|p| (p.calefaccion_meses(&e), p.refrigeracion_meses(&e)))
+                    .map(|p| (p.calefaccion_meses(e), p.refrigeracion_meses(e)))
             }),
             TipoObjeto::Zona => self.edificio.as_ref().and_then(|e| {
                 e.zonas

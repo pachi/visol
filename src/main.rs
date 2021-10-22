@@ -62,7 +62,7 @@ fn main() {
     let config = Rc::new(RefCell::new(Config::default()));
 
     app.connect_activate(clone!(@strong state, @strong config => move |app| {
-        window::build_ui(&app, &state, &config);
+        window::build_ui(app, &state, &config);
     }));
 
     app.run(&std::env::args().collect::<Vec<_>>());

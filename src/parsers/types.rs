@@ -269,7 +269,7 @@ impl PlantaLIDER {
     /// hay que ponderar por superficie (y tener en cuenta los multiplicadores)
     pub fn conceptos(&self, ed: &EdificioLIDER) -> Conceptos {
         let mut conceptos = Conceptos::default();
-        let sup_planta = self.superficie(&ed);
+        let sup_planta = self.superficie(ed);
 
         if sup_planta.abs() < f32::EPSILON {
             return conceptos;
@@ -384,7 +384,7 @@ impl Flujos {
             refpos,
             refneg,
             refnet,
-        } = self.clone();
+        } = *self;
         let values = [calpos, calneg, calnet, refpos, refneg, refnet];
         return (
             values.iter().cloned().fold(f32::NAN, f32::min),
@@ -394,11 +394,11 @@ impl Flujos {
 
     /// Devuelve el valor mínimo y máximo de todos los flujos netos
     pub fn minmax_net(&self) -> (f32, f32) {
-        return (self.calnet.min(self.refnet), self.calnet.max(self.refnet));
+        (self.calnet.min(self.refnet), self.calnet.max(self.refnet))
     }
 
     /// Conversión a vectores de flujos por tipo de flujo
-    pub fn to_flows(&self) -> FlujosVec {
+    pub fn to_flows(self) -> FlujosVec {
         FlujosVec {
             calpos: vec![self.calpos],
             calneg: vec![self.calneg],
@@ -419,7 +419,7 @@ impl std::str::FromStr for Flujos {
             .map(|v| v.trim().parse::<f32>())
             .collect::<Result<Vec<f32>, _>>()?;
         if v.len() != 6 {
-            return Err(format!("Formato de flujos erróneo: {}", s))?;
+            return Err(format!("Formato de flujos erróneo: {}", s).into());
         };
         Ok(Self {
             calpos: v[0],
@@ -490,7 +490,7 @@ impl Conceptos {
     ///     concepto, calpos, calneg, calnet, refpos, refneg, refnet
     pub fn from_vec(vec: Vec<&str>) -> Result<Self, Error> {
         if vec.len() != 9 {
-            return Err(format!("Lista de conceptos de tamaño inesperado {:?}", vec))?;
+            return Err(format!("Lista de conceptos de tamaño inesperado {:?}", vec).into());
         }
         let lst: Vec<(&str, Flujos)> = vec
             .iter()
@@ -519,7 +519,7 @@ impl Conceptos {
                 "Fuentes Internas" => res.fint = flujos,
                 "Infiltración" | "Ventilación más Infiltración" => res.vent = flujos,
                 "TOTAL" => res.total = flujos,
-                _ => Err(format!("Error al procesar concepto {}", name))?,
+                _ => return Err(format!("Error al procesar concepto {}", name).into()),
             }
         }
         Ok(res)
@@ -568,7 +568,7 @@ impl Conceptos {
     }
 
     /// Conversión a vectores de flujos por conceptos
-    pub fn to_flows(&self) -> FlujosVec {
+    pub fn to_flows(self) -> FlujosVec {
         let Conceptos {
             pext,
             cub,
@@ -763,39 +763,38 @@ impl std::str::FromStr for Elemento {
         let flujos = data.next().map(|v| v.parse::<Flujos>());
         match (nombre, flujos) {
             (Some(nombre), Some(Ok(flujos))) => Ok(Self { nombre, flujos }),
-            _ => Err(format!("Formato de elemento constructivo erróneo: {}", s))?,
+            _ => return Err(format!("Formato de elemento constructivo erróneo: {}", s).into()),
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+    // use super::*;
 
-    #[test]
-    fn add_elements() {
-        Elemento {
-            nombre: "uno".to_string(),
-            flujos: Flujos {
-                calpos: 1.0,
-                calneg: 2.0,
-                calnet: 3.0,
-                refpos: 4.0,
-                refneg: 5.0,
-                refnet: 6.0,
-            },
-        };
-        Elemento {
-            nombre: "dos".to_string(),
-            flujos: Flujos {
-                calpos: 1.0,
-                calneg: 2.0,
-                calnet: 3.0,
-                refpos: 4.0,
-                refneg: 5.0,
-                refnet: 6.0,
-            },
-        };
-
-    }
-}
+    // #[test]
+    // fn add_elements() {
+    //     Elemento {
+    //         nombre: "uno".to_string(),
+    //         flujos: Flujos {
+    //             calpos: 1.0,
+    //             calneg: 2.0,
+    //             calnet: 3.0,
+    //             refpos: 4.0,
+    //             refneg: 5.0,
+    //             refnet: 6.0,
+    //         },
+    //     };
+    //     Elemento {
+    //         nombre: "dos".to_string(),
+    //         flujos: Flujos {
+    //             calpos: 1.0,
+    //             calneg: 2.0,
+    //             calnet: 3.0,
+    //             refpos: 4.0,
+    //             refneg: 5.0,
+    //             refnet: 6.0,
+    //         },
+    //     };
+    // }
+// }

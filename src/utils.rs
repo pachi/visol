@@ -65,9 +65,9 @@ pub fn read_latin1_file<T: AsRef<Path>>(path: T) -> Result<String, Error> {
 
     match ISO_8859_1.decode(&buf, DecoderTrap::Replace) {
         Ok(utf8buf) => Ok(utf8buf),
-        _ => Err(format!(
+        _ => return Err(format!(
             "Error de codificación del archivo {}",
             path.as_ref().display()
-        ))?,
+        ).into()),
     }
 }

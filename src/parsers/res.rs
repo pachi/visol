@@ -21,7 +21,7 @@ impl EdificioLIDER {
         while let Some(line) = lines.next() {
             let line = line.trim();
             // Comentarios y líneas en blanco
-            if line.starts_with("#") || line.is_empty() {
+            if line.starts_with('#') || line.is_empty() {
                 continue;
             }
             // Plantas del edificio ----------------------------------
@@ -53,7 +53,7 @@ impl EdificioLIDER {
 fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Result<(), Error> {
     let numplantas: i32 = lines
         .next()
-        .ok_or_else(|| "No se encuentra el número de plantas del edificio")?
+        .ok_or("No se encuentra el número de plantas del edificio")?
         .parse()?;
     // XXX: no guardamos el número de plantas del edificio. Basta contarlas en la lista de plantas
     // edificio.numplantas = numplantas;
@@ -64,7 +64,7 @@ fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Resu
     for _ in 0..numplantas {
         let pname = lines
             .find(|l| l.starts_with("\"P"))
-            .ok_or_else(|| "No se encuentran todas las plantas del edificio")?
+            .ok_or("No se encuentran todas las plantas del edificio")?
             .trim()
             .trim_matches('\"');
         let mut planta = PlantaLIDER::from_name(pname);
@@ -88,10 +88,11 @@ fn find_plantas_y_zonas(lines: &mut Lines, edificio: &mut EdificioLIDER) -> Resu
                     num, //num.trim_start_matches("Zona ").parse::<i32>()?,
                     name.trim().trim_matches('\"').to_string(),
                 ),
-                _ => Err(format!(
-                    "Formato incorrecto de zona {} de la planta {}",
-                    i, pname
-                ))?,
+                _ => {
+                    return Err(
+                        format!("Formato incorrecto de zona {} de la planta {}", i, pname).into(),
+                    )
+                }
             };
             let zsuperficie = lines
                 .next()
@@ -151,7 +152,7 @@ fn find_demandas_generales_edificio(
     });
     match lines
         .next()
-        .ok_or_else(|| "Formato incorrecto: datos generales")?
+        .ok_or("Formato incorrecto: datos generales")?
         .split(',')
         .map(|v| v.trim().parse::<f32>())
         .collect::<Result<Vec<f32>, _>>()?
@@ -162,10 +163,9 @@ fn find_demandas_generales_edificio(
             edificio.refrigeracion = *refr;
         }
         res => {
-            return Err(format!(
-                "Formato incorrecto de datos a nivel de edificio: {:?}",
-                res
-            ))?
+            return Err(
+                format!("Formato incorrecto de datos a nivel de edificio: {:?}", res).into(),
+            )
         }
     };
     Ok(())
@@ -177,7 +177,7 @@ fn find_cal_mensual_edificio(lines: &mut Lines, edificio: &mut EdificioLIDER) ->
     lines.find(|l| l.starts_with("Calefacción mensual"));
     let cal_meses = lines
         .next()
-        .ok_or_else(|| "Formato incorrecto: calefacción por meses")?
+        .ok_or("Formato incorrecto: calefacción por meses")?
         .split(',')
         .map(|v| v.trim().parse::<f32>())
         .collect::<Result<Vec<f32>, _>>()?;
@@ -192,7 +192,7 @@ fn find_ref_mensual_edificio(lines: &mut Lines, edificio: &mut EdificioLIDER) ->
     lines.find(|l| l.starts_with("Refrigeración mensual"));
     let ref_meses = lines
         .next()
-        .ok_or_else(|| "Formato incorrecto: refrigeración por meses")?
+        .ok_or("Formato incorrecto: refrigeración por meses")?
         .split(',')
         .map(|v| v.trim().parse::<f32>())
         .collect::<Result<Vec<f32>, _>>()?;
@@ -210,7 +210,7 @@ fn find_datos_generales_zonas(
     lines.find(|l| l.starts_with("Numero de zonas"));
     let numzonas = lines
         .next()
-        .ok_or_else(|| "Formato incorrecto: zonas del edificio")?
+        .ok_or("Formato incorrecto: zonas del edificio")?
         .parse::<i32>()?;
     // XXX: no guardamos el número de zonas del edificio. Es la suma de zonas de las plantas
     // edificio.numzonas = numzonas;
@@ -221,11 +221,11 @@ fn find_datos_generales_zonas(
     for _ in 0..numzonas {
         let valores = lines
             .next()
-            .ok_or_else(|| "Formato incorrecto: datos de zonas")?
+            .ok_or("Formato incorrecto: datos de zonas")?
             .split(',')
             .collect::<Vec<&str>>();
         if valores.len() != 5 {
-            return Err("Número incorrecto de valores en datos de zonas")?;
+            return Err("Número incorrecto de valores en datos de zonas".into());
         };
         let numbers = valores[1..]
             .iter()
@@ -250,13 +250,13 @@ fn find_datos_generales_zonas(
     // TOTAL
     match lines
         .find(|l| l.starts_with("TOTAL"))
-        .ok_or_else(|| "Formato incorrectos: sin total de zonas")?
+        .ok_or("Formato incorrectos: sin total de zonas")?
         .split(',')
         .collect::<Vec<_>>()
         .as_slice()
     {
         [_, superficie, _, _] => edificio.superficie = superficie.trim().parse::<f32>()?,
-        res => return Err(format!("Formato incorrecto en total de zonas: {:?}", res))?,
+        res => return Err(format!("Formato incorrecto en total de zonas: {:?}", res).into()),
     };
     Ok(zonelist)
 }
@@ -265,13 +265,13 @@ fn find_datos_generales_zonas(
 fn find_cal_mensual_zonas(
     lines: &mut Lines,
     edificio: &mut EdificioLIDER,
-    zonelist: &Vec<String>,
+    zonelist: &[String],
 ) -> Result<(), Error> {
     lines.find(|l| l.starts_with("Calefacción mensual por zonas"));
     for nombre in zonelist {
         let valores = lines
             .next()
-            .ok_or_else(|| "Formato incorrecto: datos de calefacción mensual por zonas")?
+            .ok_or("Formato incorrecto: datos de calefacción mensual por zonas")?
             .split(',')
             .map(|v| v.trim().parse::<f32>())
             .collect::<Result<Vec<f32>, _>>()?;
@@ -288,13 +288,13 @@ fn find_cal_mensual_zonas(
 fn find_ref_mensual_zonas(
     lines: &mut Lines,
     edificio: &mut EdificioLIDER,
-    zonelist: &Vec<String>,
+    zonelist: &[String],
 ) -> Result<(), Error> {
     lines.find(|l| l.starts_with("Refrigeración mensual por zonas"));
     for nombre in zonelist {
         let valores = lines
             .next()
-            .ok_or_else(|| "Formato incorrecto: datos de refrigeración mensual por zonas")?
+            .ok_or("Formato incorrecto: datos de refrigeración mensual por zonas")?
             .split(',')
             .map(|v| v.trim().parse::<f32>())
             .collect::<Result<Vec<f32>, _>>()?;
