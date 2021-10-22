@@ -299,14 +299,14 @@ pub fn draw_piechart(
         };
 
         // Porcentajes, solo si hay hueco
-        let extents = cr.text_extents(&value_pct);
+        let extents = cr.text_extents(value_pct);
         let available_height = (2.0 / 3.0 * radius * (end_angle - start_angle).sin()).abs();
         if available_height > 1.1 * extents.height {
             cr.move_to(
                 ox + 2.0 / 3.0 * radius * mid_angle.cos() - 0.5 * extents.width,
                 oy + 2.0 / 3.0 * radius * mid_angle.sin() + 0.5 * extents.height,
             );
-            cr.show_text(&value_pct);
+            cr.show_text(value_pct);
         }
 
         // Líneas
@@ -336,7 +336,7 @@ pub fn draw_piechart(
         pangocairo::show_layout(cr, &layout);
     }
 
-    draw_watermark(&cr, width - height * 0.05, htitulo);
+    draw_watermark(cr, width - height * 0.05, htitulo);
 
     // Restauramos contexto
     cr.restore();

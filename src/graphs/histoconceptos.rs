@@ -229,7 +229,7 @@ pub fn draw_histoconceptos(
     }
 
     // Marca de Visol
-    draw_watermark(&cr, width - margin, htitulo);
+    draw_watermark(cr, width - margin, htitulo);
 
     // Restauramos contexto
     cr.restore();

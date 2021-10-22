@@ -139,7 +139,7 @@ pub fn draw_histomeses(
     cr.move_to(xpos, ypos);
     for label in &MESES {
         cr.show_text(label);
-        xpos = xpos + stepx;
+        xpos += stepx;
         cr.move_to(xpos, ypos);
     }
     // Ticks en x
@@ -219,7 +219,7 @@ pub fn draw_histomeses(
         }
     }
 
-    draw_watermark(&cr, width - margin, htitulo);
+    draw_watermark(cr, width - margin, htitulo);
 
     // Restauramos contexto
     cr.restore();

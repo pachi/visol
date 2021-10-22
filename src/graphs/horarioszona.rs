@@ -70,7 +70,7 @@ pub fn draw_zonasgraph(
     let y1 = y0 + height;
     let subtitle = "Temperatura diaria (máxima, media, mínima) [ºC]";
     draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(&cr, x0, x1, y0, y1);
+    draw_months(cr, x0, x1, y0, y1);
     draw_ytitle(cr, "Temperatura [ºC]", margin * 0.75, (y0 + y1) / 2.0);
 
     // Valores remuestreados con media, máxima y mínima diaria
@@ -88,12 +88,12 @@ pub fn draw_zonasgraph(
         .map(|chunk| chunk.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b)))
         .collect();
     // Dominio de los datos de entrada
-    let min_lim = t_min.iter().fold(f32::INFINITY, |a, b| a.min(*b)).ceil() - 3 as f32;
+    let min_lim = t_min.iter().fold(f32::INFINITY, |a, b| a.min(*b)).ceil() - 3.0;
     let max_lim = t_max
         .iter()
         .fold(f32::NEG_INFINITY, |a, b| a.max(*b))
         .floor()
-        + 3 as f32;
+        + 3.0;
     let yscale = linear_scale(min_lim as f64, max_lim as f64, y1, y0);
 
     // Fondo T 17-28ºC
@@ -179,7 +179,7 @@ pub fn draw_zonasgraph(
     let y1 = y0 + height;
     let subtitle = "Carga térmica diaria (sensible, total) [W]";
     draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(&cr, x0, x1, y0, y1);
+    draw_months(cr, x0, x1, y0, y1);
     draw_ytitle(cr, "Carga térmica [W]", margin * 0.75, (y0 + y1) / 2.0);
 
     let q_sen: Vec<_> = data
@@ -328,7 +328,7 @@ pub fn draw_zonasgraph(
         volumen, v_mean
     ));
 
-    draw_watermark(&cr, widget_width - widget_height * 0.05, htitle);
+    draw_watermark(cr, widget_width - widget_height * 0.05, htitle);
 
     cr.restore();
 }
@@ -433,7 +433,7 @@ fn ylabels(cr: &cairo::Context, values: &[(f64, String)], ticksize: f64, x0: f64
         } else {
             cr.rel_move_to(ticksize, 0.0);
         }
-        cr.show_text(&label);
+        cr.show_text(label);
     }
     cr.restore();
 }
