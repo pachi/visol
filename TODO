@@ -1,3 +1,7 @@
 - Compilación a windows: https://gtk-rs.org/docs-src/tutorial/cross
 - Añadir icono
 - Actualizar imagen splash
+- Revisar generación de instalador: https://www.conjur.org/blog/building-a-windows-installer-from-a-linux-ci-pipeline/
+- Permitir guardar archivo .bin en JSON
+- Añadir carga punta y demanda mensual en vista de archivos .bin
+- Pensar cálculo de horas fuera de consigna en .bin
