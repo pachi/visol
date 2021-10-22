@@ -1,6 +1,5 @@
 # ViSol - Visor de achivos de resultados de LIDER
 
-
 ## Descripción
 
 **ViSol** es un **visor de los archivos de resultados generados por las
