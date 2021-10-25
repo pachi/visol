@@ -66,35 +66,39 @@ pub fn draw_zonasgraph(
     let data = zonedata.unwrap();
 
     // ## Grafica 1 - Temperatura diaria (máxima, media, mínima)
-    let y0 = htitle + subtitle_block_height;
-    let y1 = y0 + height;
-    let subtitle = "Temperatura diaria (máxima, media, mínima) [ºC]";
-    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(cr, x0, x1, y0, y1);
-    draw_ytitle(cr, "Temperatura [ºC]", margin * 0.75, (y0 + y1) / 2.0);
 
-    // Valores remuestreados con media, máxima y mínima diaria
+    // Datos - Valores remuestreados con media, máxima y mínima diaria
     let resampled_temp = data.t_real.chunks_exact(24);
     let t_mean: Vec<_> = resampled_temp
         .clone()
         .map(|chunk| chunk.iter().sum::<f32>() / 24.0)
         .collect();
-    let t_min: Vec<_> = resampled_temp
+    let t_real_min: Vec<_> = resampled_temp
         .clone()
         .map(|chunk| chunk.iter().fold(f32::INFINITY, |a, b| a.min(*b)))
         .collect();
-    let t_max: Vec<_> = resampled_temp
+    let t_real_max: Vec<_> = resampled_temp
         .clone()
         .map(|chunk| chunk.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b)))
         .collect();
+
     // Dominio de los datos de entrada
-    let min_lim = t_min.iter().fold(f32::INFINITY, |a, b| a.min(*b)).ceil() - 3.0;
-    let max_lim = t_max
+    let min_lim = t_real_min.iter().fold(f32::INFINITY, |a, b| a.min(*b)).ceil() - 3.0;
+    let max_lim = t_real_max
         .iter()
         .fold(f32::NEG_INFINITY, |a, b| a.max(*b))
         .floor()
         + 3.0;
+
+    let y0 = htitle + subtitle_block_height;
+    let y1 = y0 + height;
     let yscale = linear_scale(min_lim as f64, max_lim as f64, y1, y0);
+
+    // Título y subtítulo
+    let subtitle = "Temperatura diaria (máxima, media, mínima) [ºC]";
+    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
+    draw_months(cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Temperatura [ºC]", margin * 0.75, (y0 + y1) / 2.0);
 
     // Fondo T 17-28ºC
     cr.move_to(x0, yscale(28.0));
@@ -122,7 +126,7 @@ pub fn draw_zonasgraph(
         .enumerate()
         .skip(1)
         .for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
-    t_max
+    t_real_max
         .iter()
         .enumerate()
         .rev()
@@ -136,7 +140,7 @@ pub fn draw_zonasgraph(
         .enumerate()
         .skip(1)
         .for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
-    t_min
+    t_real_min
         .iter()
         .enumerate()
         .rev()
@@ -146,8 +150,8 @@ pub fn draw_zonasgraph(
     // Línea de t_mínima
     cr.set_line_width(0.5);
     cr.set_source_rgb(0.0, 0.0, 1.0);
-    cr.move_to(x0, yscale(t_min[0] as f64));
-    t_min
+    cr.move_to(x0, yscale(t_real_min[0] as f64));
+    t_real_min
         .iter()
         .enumerate()
         .skip(1)
@@ -156,8 +160,8 @@ pub fn draw_zonasgraph(
     // Línea de t_máxima
     cr.set_line_width(0.5);
     cr.set_source_rgb(1.0, 0.0, 0.0);
-    cr.move_to(x0, yscale(t_max[0] as f64));
-    t_max
+    cr.move_to(x0, yscale(t_real_max[0] as f64));
+    t_real_max
         .iter()
         .enumerate()
         .skip(1)
@@ -175,13 +179,8 @@ pub fn draw_zonasgraph(
     cr.stroke();
 
     // ## Gráfica 2 - Carga térmica diaria media (sensible, total (sen + lat)) W
-    let y0 = y1 + margin + subtitle_block_height;
-    let y1 = y0 + height;
-    let subtitle = "Carga térmica diaria (sensible, total) [W]";
-    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(cr, x0, x1, y0, y1);
-    draw_ytitle(cr, "Carga térmica [W]", margin * 0.75, (y0 + y1) / 2.0);
 
+    // Datos
     let q_sen: Vec<_> = data
         .q_sen
         .chunks_exact(24)
@@ -199,8 +198,17 @@ pub fn draw_zonasgraph(
     let q_tot: Vec<f32> = q_sen.iter().zip(q_lat.iter()).map(|(a, b)| a + b).collect();
     let q_min = q_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b));
     let q_max = q_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
+
+    let y0 = y1 + margin + subtitle_block_height;
+    let y1 = y0 + height;
     let range = nice_range(q_min as f64, q_max as f64, 4);
     let yscale = linear_scale(range[0], range[range.len() - 1], y1, y0);
+
+    // Título y subtítulo
+    let subtitle = "Carga térmica diaria (sensible, total) [W]";
+    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
+    draw_months(cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Carga térmica [W]", margin * 0.75, (y0 + y1) / 2.0);
 
     // Etiquetas Y
     let labels: Vec<(f64, String)> = range
@@ -232,7 +240,7 @@ pub fn draw_zonasgraph(
     // Línea de q_tot
     cr.set_line_width(1.0);
     cr.set_source_rgb(0.0, 0.0, 0.0);
-    cr.move_to(x0, yscale(t_min[0] as f64));
+    cr.move_to(x0, yscale(t_real_min[0] as f64));
     q_tot
         .iter()
         .enumerate()
@@ -247,20 +255,16 @@ pub fn draw_zonasgraph(
     cr.line_to(x1, rounder(yscale(0.0)));
     cr.stroke();
 
-    // Gráfica 3 - Caudal diario de ventilación e infiltraciones
-    let y0 = y1 + margin + subtitle_block_height;
-    let y1 = y0 + height;
-    let subtitle = "Caudal diario de ventilación e infiltraciones [m³/h; 1/h]";
-    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
-    draw_months(cr, x0, x1, y0, y1);
-    draw_ytitle(cr, "Caudal [m³/h]", margin * 0.75, (y0 + y1) / 2.0);
-    draw_ytitle(
-        cr,
-        "Caudal [1/h]",
-        widget_width - margin * 0.25,
-        (y0 + y1) / 2.0,
-    );
+    // Carga pico
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.set_font_size(SMALL_SIZE);
+    cr.set_source_rgb(0.2, 0.2, 0.2);
+    cr.move_to(x0 + width * 0.01, y0 + 0.15 * height);
+    cr.show_text(&format!("Carga pico anual - min: {:.2} W/m², max: {:.2} W/m²", q_min / data.area, q_max / data.area));
 
+    // Gráfica 3 - Caudal diario de ventilación e infiltraciones
+
+    // Datos
     let volumen = data.volumen; // m3
 
     // Convertir kg/s a m3/h: caudal[m3/h] = caudal[kg/s] * 3600 s/h * 1.225 kg/m³
@@ -273,8 +277,24 @@ pub fn draw_zonasgraph(
 
     let v_min = v_tot.iter().fold(f32::INFINITY, |a, b| a.min(*b)).min(0.0);
     let v_max = v_tot.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b));
+    let v_mean: f32 = (v_tot.iter().sum::<f32>() / v_tot.len() as f32) / volumen;
+
+    let y0 = y1 + margin + subtitle_block_height;
+    let y1 = y0 + height;
     let range = nice_range(v_min as f64, v_max as f64, 4);
     let yscale = linear_scale(range[0], range[range.len() - 1], y1, y0);
+
+    // Título y subtítulo
+    let subtitle = "Caudal diario de ventilación e infiltraciones [m³/h; 1/h]";
+    draw_subtitle_and_box(cr, subtitle, subtitle_block_height, x0, y0, width, height);
+    draw_months(cr, x0, x1, y0, y1);
+    draw_ytitle(cr, "Caudal [m³/h]", margin * 0.75, (y0 + y1) / 2.0);
+    draw_ytitle(
+        cr,
+        "Caudal [1/h]",
+        widget_width - margin * 0.25,
+        (y0 + y1) / 2.0,
+    );
 
     // Etiquetas Y
     // m3/h
@@ -318,11 +338,10 @@ pub fn draw_zonasgraph(
     cr.stroke();
 
     // Volumen y q_medio
-    let v_mean: f32 = (v_tot.iter().sum::<f32>() / v_tot.len() as f32) / volumen;
     cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
     cr.set_font_size(SMALL_SIZE);
     cr.set_source_rgb(0.2, 0.2, 0.2);
-    cr.move_to(x0 + width * 0.01, y1 - 0.15 * height);
+    cr.move_to(x0 + width * 0.01, y0 + 0.15 * height);
     cr.show_text(&format!(
         "Vol. zona = {:.1} m³/h, Caudal medio = {:.2} ren/h",
         volumen, v_mean
