@@ -247,7 +247,7 @@ pub struct ZonaLiderFFI {
     /// Area: Superficie de la zona [m2]
     /// float Area;
     pub area: f32,
-    /// Volumen: Volumen de la zona []m3]
+    /// Volumen: Volumen de la zona [m3]
     /// float Volumen;
     pub volumen: f32,
     /// multiplicador: Multiplicador de la zona
