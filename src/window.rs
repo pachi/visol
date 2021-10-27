@@ -83,7 +83,7 @@ pub fn build_ui(
     let mnu_filechooser: gtk::ToolButton = ui.get_object("abrirbutton").unwrap();
     mnu_filechooser.connect_clicked(clone!(@weak state, @weak ui => move |_| {
         if let Some(filepath) = openfile() {
-            loadfile(&filepath, state.clone(), ui.clone());
+            loadfile(&filepath, state, &ui);
         }
         // Seleccionar edificio al recargar
         let tv: gtk::TreeView = ui.get_object("treeview").unwrap();
@@ -92,7 +92,7 @@ pub fn build_ui(
 
     // Activar pestaña de texto
     let mnu_showtext: gtk::ToggleToolButton = ui.get_object("showtext").unwrap();
-    mnu_showtext.connect_toggled(clone!(@weak state, @strong ui => move |button| {
+    mnu_showtext.connect_toggled(clone!(@strong ui => move |button| {
         let ui_swtext: gtk::ScrolledWindow = ui.get_object("scrolledwindowtext").unwrap();
         match button.get_property("active").unwrap().get::<bool>().unwrap().unwrap() {
             true => ui_swtext.show(),
@@ -115,7 +115,7 @@ pub fn build_ui(
     // Histograma de flujos por conceptos de demanda y demandas netas anuales
     let da_histoconceptos: gtk::DrawingArea = ui.get_object("histoconceptos").unwrap();
     da_histoconceptos.connect_draw(
-        clone!(@weak state, @strong ui => @default-return Inhibit(false), move |widget, cr| {
+        clone!(@weak state => @default-return Inhibit(false), move |widget, cr| {
             let st = state.borrow();
             let show_detail = st.show_detail;
             let curr_name = st.curr_name.as_str();
@@ -225,13 +225,14 @@ pub fn build_ui(
             let nombre: String = model.get_value(&iter, 0).get().unwrap().unwrap();
             let tipo = model.get_value(&iter, 1).get_some::<u8>().unwrap().into();
             let zone = model.get_value(&iter, 2).get::<String>().unwrap().unwrap();
+            let (mul, sup, cal, refr) = {
+                let mut model = state.borrow_mut();
+                model.curr_obj_type = tipo;
+                model.curr_name = nombre.clone();
+                model.curr_zone = zone;
+                model.basicdata().unwrap()
+            };
 
-            let mut model = state.borrow_mut();
-            model.curr_obj_type = tipo;
-            model.curr_name = nombre.clone();
-            model.curr_zone = zone.clone();
-
-            let (mul, sup, cal, refr) = model.basicdata().unwrap();
             let mut txt1 = format!("<big><b>{}</b></big> ({})\n", nombre, tipo);
             match tipo {
                 TipoObjeto::Edificio | TipoObjeto::Planta | TipoObjeto::Zona => {
@@ -281,7 +282,7 @@ pub fn build_ui(
 
     let mut testfile = std::env::current_dir().unwrap();
     testfile.push("data/test.res");
-    loadfile(testfile, state.clone(), ui.clone());
+    loadfile(testfile, state.clone(), &ui);
 
     // Seleccionar edificio al arrancar
     tv.set_cursor::<gtk::TreeViewColumn>(&gtk::TreePath::from_indicesv(&[0]), None, false);
@@ -307,7 +308,7 @@ fn update_graphs(ui: gtk::Builder) {
 
 
 /// Load data from file path into the state and application ui
-fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: gtk::Builder) {
+fn loadfile<P: AsRef<Path>>(path: P, state: Rc<RefCell<AppState>>, ui: &gtk::Builder) {
     let sb: gtk::Statusbar = ui.get_object("statusbar").unwrap();
     let window: gtk::ApplicationWindow = ui.get_object("window").unwrap();
 

@@ -7,11 +7,13 @@ pub mod piechart;
 
 const TITLE_SIZE: f64 = 20.0;
 const NORMAL_SIZE: f64 = 14.0;
+const MID_SIZE: f64 = 12.0;
 const SMALL_SIZE: f64 = 11.0;
 /// Meses del año
 const MESES: [&str; 12] = [
     "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
+// const DIASMESES: [i32; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 /// Rounder to limit line "fuzziness"
 #[inline]
