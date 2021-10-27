@@ -5,9 +5,7 @@
   <object class="GtkFileFilter" id="filefilter">
     <patterns>
       <pattern>*.re[s|2|0]</pattern>
-      <pattern>*.bin</pattern>
       <pattern>*.RE[S|2|0]</pattern>
-      <pattern>*.BIN</pattern>
     </patterns>
   </object>
   <object class="GtkFileChooserDialog" id="filechooserdialog">
