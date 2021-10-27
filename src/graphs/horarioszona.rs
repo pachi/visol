@@ -7,7 +7,8 @@ use std::f64::consts::PI;
 use gtk::WidgetExt;
 
 use super::{
-    draw_watermark, linear_scale, nice_range, rounder, MESES, NORMAL_SIZE, SMALL_SIZE, TITLE_SIZE,
+    draw_watermark, linear_scale, nice_range, rounder, MESES, MID_SIZE, NORMAL_SIZE, SMALL_SIZE,
+    TITLE_SIZE,
 };
 use crate::parsers::bin::ZonaLider;
 
@@ -82,8 +83,37 @@ pub fn draw_zonasgraph(
         .map(|chunk| chunk.iter().fold(f32::NEG_INFINITY, |a, b| a.max(*b)))
         .collect();
 
-    // Dominio de los datos de entrada
-    let min_lim = t_real_min.iter().fold(f32::INFINITY, |a, b| a.min(*b)).ceil() - 3.0;
+    // // Horas con sobrecalentamiento y con falta de calefacción
+    let da_cal: Vec<_> = data
+        .da_cal
+        .chunks_exact(24)
+        .map(|chunk| chunk.iter().sum::<i32>() as f64 / 24.0)
+        .collect();
+    let da_ref: Vec<_> = data
+        .da_ref
+        .chunks_exact(24)
+        .map(|chunk| chunk.iter().sum::<i32>() as f64 / 24.0)
+        .collect();
+
+    let mut below_tmin = 0;
+    let mut over_tmax = 0;
+    for (nhora, t_real) in data.t_real.iter().enumerate() {
+        if *t_real < data.t_min[nhora] {
+            // println!("treal: {:.2} < t_min: {:.2}", t_real, data.t_min[nhora]);
+            below_tmin += 1;
+        }
+        if *t_real > data.t_max[nhora] {
+            // println!("treal: {:.2} > t_max: {:.2}", t_real, data.t_max[nhora]);
+            over_tmax += 1;
+        };
+    }
+
+    // Dominio de los datos de entrada (eje y temperaturas del espacio)
+    let min_lim = t_real_min
+        .iter()
+        .fold(f32::INFINITY, |a, b| a.min(*b))
+        .ceil()
+        - 3.0;
     let max_lim = t_real_max
         .iter()
         .fold(f32::NEG_INFINITY, |a, b| a.max(*b))
@@ -178,6 +208,41 @@ pub fn draw_zonasgraph(
         .for_each(|(i, t)| cr.line_to(xscale(i as f64), yscale(*t as f64)));
     cr.stroke();
 
+    // Línea de días con demanda de calefacción (da_cal > 0.01)
+    cr.set_line_width(2.0);
+    da_cal.iter().enumerate().skip(1).for_each(|(i, t)| {
+        if *t > 0.01 {
+            cr.move_to(xscale((i - 1) as f64), yscale((min_lim + 0.5) as f64));
+            cr.set_source_rgb(1.0, 0.0, 0.0);
+            cr.line_to(xscale(i as f64), yscale((min_lim + 0.5) as f64));
+            cr.stroke();
+        };
+    });
+    // Línea de días con demanda de refrigeración (da_cal > 0.01)
+    da_ref.iter().enumerate().skip(1).for_each(|(i, t)| {
+        if *t > 0.01 {
+            cr.move_to(xscale((i - 1) as f64), yscale((min_lim + 1.0) as f64));
+            cr.set_source_rgb(0.0, 0.0, 1.0);
+            cr.line_to(xscale(i as f64), yscale((min_lim + 1.0) as f64));
+            cr.stroke();
+        };
+    });
+
+    // Horas fuera de consigna (cal, ref)
+    cr.set_font_size(MID_SIZE);
+    cr.set_source_rgb(0.2, 0.2, 0.2);
+    cr.move_to(x0 + width * 0.01, y0 + 0.15 * height);
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text("Horas fuera de consigna - cal: ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.2}", below_tmin));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" h, ref: ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.2}", over_tmax));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" h");
+
     // ## Gráfica 2 - Carga térmica diaria media (sensible, total (sen + lat)) W
 
     // Datos
@@ -256,11 +321,19 @@ pub fn draw_zonasgraph(
     cr.stroke();
 
     // Carga pico
-    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
-    cr.set_font_size(SMALL_SIZE);
-    cr.set_source_rgb(0.2, 0.2, 0.2);
     cr.move_to(x0 + width * 0.01, y0 + 0.15 * height);
-    cr.show_text(&format!("Carga pico anual - min: {:.2} W/m², max: {:.2} W/m²", q_min / data.area, q_max / data.area));
+    cr.set_font_size(MID_SIZE);
+    cr.set_source_rgb(0.2, 0.2, 0.2);
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text("Carga pico anual - min: ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.2}", q_min / data.area));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" W/m², max: ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.2}", q_max / data.area));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" W/m²");
 
     // Gráfica 3 - Caudal diario de ventilación e infiltraciones
 
@@ -338,14 +411,19 @@ pub fn draw_zonasgraph(
     cr.stroke();
 
     // Volumen y q_medio
-    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
-    cr.set_font_size(SMALL_SIZE);
-    cr.set_source_rgb(0.2, 0.2, 0.2);
     cr.move_to(x0 + width * 0.01, y0 + 0.15 * height);
-    cr.show_text(&format!(
-        "Vol. zona = {:.1} m³/h, Caudal medio = {:.2} ren/h",
-        volumen, v_mean
-    ));
+    cr.set_font_size(MID_SIZE);
+    cr.set_source_rgb(0.2, 0.2, 0.2);
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text("Vol. zona = ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.1}", volumen));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" m³/h, Caudal medio = ");
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.show_text(&format!("{:.2}", v_mean));
+    cr.select_font_face("Arial", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+    cr.show_text(" ren/h");
 
     draw_watermark(cr, widget_width - widget_height * 0.05, htitle);
 
