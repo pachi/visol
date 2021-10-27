@@ -202,7 +202,7 @@ impl TryFrom<&ZonaLiderFFI> for ZonaLider {
             q_lat: z.q_lat.to_vec(),
             t_real: z.t_real.to_vec(),
             t_max: z.t_max.to_vec(),
-            t_min: z.t_max.to_vec(),
+            t_min: z.t_min.to_vec(),
             v_ventinf: z.v_ventinf.to_vec(),
         })
     }
